@@ -17,14 +17,14 @@ class EmailHandler:
     - body: str    — plain-text body
     """
 
-    async def execute(self, payload: dict[str, Any]) -> None:
+    async def execute(self, payload: dict[str, Any]) -> dict[str, Any]:
         missing = {"to", "subject", "body"} - payload.keys()
         if missing:
             raise ValueError("Email payload missing required keys: {}", missing)
 
-        await asyncio.to_thread(self._send_email_sync, payload)
+        return await asyncio.to_thread(self._send_email_sync, payload)
 
-    def _send_email_sync(self, payload: dict[str, Any]) -> None:
+    def _send_email_sync(self, payload: dict[str, Any]) -> dict[str, Any]:
         msg = EmailMessage()
         msg.set_content(payload["body"])
         msg["Subject"] = payload["subject"]
@@ -37,3 +37,10 @@ class EmailHandler:
             server.send_message(msg)
 
         logger.info("Email sent to {}", payload["to"])
+
+        return {
+            "status": "sent",
+            "to": payload["to"],
+            "subject": payload["subject"],
+            "message": msg.as_string(),
+        }

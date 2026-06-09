@@ -70,6 +70,7 @@ export interface Job {
   id: string;
   type: string;
   payload: Record<string, any>;
+  result?: Record<string, any>;
   priority: number;
   status: JobStatus;
   retry_count: number;

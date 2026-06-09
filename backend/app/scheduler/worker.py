@@ -67,7 +67,8 @@ async def process_job(job_id: uuid.UUID) -> None:
 
         try:
             handler = get_handler(job.type)
-            await handler.execute(job.payload)
+            result_data = await handler.execute(job.payload)
+            job.result = result_data
 
             job.status = JobStatus.COMPLETED
             job.completed_at = datetime.now(UTC)

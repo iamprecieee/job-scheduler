@@ -27,6 +27,7 @@ class JobResponse(BaseModel):
     id: uuid.UUID
     type: str
     payload: dict[str, Any]
+    result: dict[str, Any] | None = None
     priority: int
     effective_priority: float
     status: JobStatus

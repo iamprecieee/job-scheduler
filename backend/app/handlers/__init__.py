@@ -8,7 +8,7 @@ from app.handlers.registry import get_handler, register_handler
 class JobHandler(Protocol):
     """Protocol every job handler must satisfy."""
 
-    async def execute(self, payload: dict[str, Any]) -> None: ...
+    async def execute(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
 
 __all__ = [
