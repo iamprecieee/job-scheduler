@@ -1,6 +1,5 @@
 import time
 import uuid
-from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from loguru import logger

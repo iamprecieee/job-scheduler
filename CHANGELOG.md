@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+Format based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [1.0.0-beta] - 2026-06-09
+## [Unreleased]
 
 ### Added
 - Complete FastAPI backend with Async SQLAlchemy and asyncpg.
@@ -14,3 +14,7 @@ All notable changes to this project will be documented in this file.
 - Real-time queue length monitoring via SSE.
 - Fully typed frontend API client.
 - `ARCHITECTURE.md` design document.
+
+---
+
+[Unreleased]: https://github.com/user/job-scheduler/compare/v1.0.0-beta...HEAD

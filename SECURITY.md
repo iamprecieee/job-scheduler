@@ -1,17 +1,62 @@
 # Security Policy
 
-## Supported Versions
+## Threat Model
 
-Currently, only the `main` branch (v1.0.0-beta) is supported with security updates.
+Project protects **job execution state and administrative endpoints** for **backend systems and administrators**.
 
-## Reporting a Vulnerability
+### In Scope
 
-If you discover a security vulnerability within the Job Scheduler, please send an e-mail to security@example.com instead of using the issue tracker. All security vulnerabilities will be promptly addressed.
+| Threat | Protection |
+|--------|------------|
+| Duplicate Execution | `SELECT ... FOR UPDATE SKIP LOCKED` guarantees zero duplicate processing. |
+| Unauthorized Access | Protected administrative endpoints require a valid `X-Admin-Token` header. |
+| SQL Injection | SQLAlchemy 2.0 ORM is used with parameterized queries. |
+| Cross-Site Scripting (XSS) | Frontend relies on React's auto-escaping and sanitized REST outputs. |
 
-## Security Controls Implemented
+### Out of Scope
 
-- **CORS Policies**: Explicitly configured in `backend/app/config.py`.
-- **Admin Tokens**: Protected endpoints (like `/benchmark`) require a valid `X-Admin-Token` header.
-- **SQL Injection**: SQLAlchemy 2.0 ORM is used with parameterized queries to prevent SQL injection.
-- **DDoS Protection**: Future deployment will incorporate Nginx rate limiting.
-- **Data Access**: `SELECT ... FOR UPDATE SKIP LOCKED` ensures jobs cannot be hijacked by concurrent threads.
+- Root/administrator access to the underlying server/container.
+- Physical access attacks to the database or servers.
+- Social engineering attacks.
+
+---
+
+## Implementation
+
+| Component | Choice | Rationale |
+|-----------|--------|-----------|
+| Database Locking | Postgres Row-Level Locks | Native and robust atomic job leasing across distributed worker nodes. |
+| CORS Policy | Configurable origins | Restricts frontend access to known UI domains. |
+
+---
+
+## Known Limitations
+
+1. **Denial of Service (DoS)**: The application currently lacks built-in rate limiting. A flood of job creation requests could exhaust database connections. This should be mitigated via an external reverse proxy (e.g., Nginx).
+2. **Plaintext Admin Token**: The `X-Admin-Token` is currently transmitted as a plaintext header. Ensure the application is deployed behind HTTPS/TLS to encrypt traffic in transit.
+
+---
+
+## Vulnerability Disclosure
+
+**Email:** security@example.com
+
+Do not file public issues for security vulnerabilities.
+
+| Stage | Timeline |
+|-------|----------|
+| Acknowledgment | 24 hours |
+| Assessment | 72 hours |
+| Fix | Severity-dependent |
+
+---
+
+## Dependencies
+
+| Library | Purpose |
+|---------|---------|
+| `fastapi` | Web Framework |
+| `sqlalchemy` | ORM and Query Builder |
+| `asyncpg` | Async PostgreSQL Driver |
+
+Advisories tracked via `dependabot`/`pip-audit`.
