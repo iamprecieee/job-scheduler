@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "date-fns": "^4.4.0",
     "lucide-react": "^1.17.0",
     "motion": "^12.40.0",
     "react": "^19.2.6",
+    "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.17.0"
   },
@@ -20,6 +22,7 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
+    "@types/react-datepicker": "^6.2.0",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",

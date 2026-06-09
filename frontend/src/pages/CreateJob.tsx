@@ -4,6 +4,9 @@ import { motion } from 'motion/react';
 import { Save, AlertCircle } from 'lucide-react';
 import { apiClient } from '../api/client';
 import type { CreateJobRequest } from '../api/client';
+import Select from '../components/Select';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +24,10 @@ const CreateJob: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,43 +130,48 @@ const CreateJob: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="form-group">
               <label className="form-label">Priority</label>
-              <select 
-                name="priority" 
-                className="form-control" 
-                value={formData.priority}
-                onChange={handleChange}
-              >
-                <option value={1}>1 - High</option>
-                <option value={2}>2 - Medium</option>
-                <option value={3}>3 - Low</option>
-              </select>
+              <Select 
+                options={[
+                  { value: '1', label: '1 - High' },
+                  { value: '2', label: '2 - Medium' },
+                  { value: '3', label: '3 - Low' },
+                ]}
+                value={String(formData.priority)}
+                onChange={(val) => handleSelectChange('priority', val)}
+              />
             </div>
 
             <div className="form-group">
               <label className="form-label">Recurring Interval (Optional)</label>
-              <select 
-                name="recurringInterval" 
-                className="form-control" 
+              <Select 
+                options={[
+                  { value: '', label: 'None (Run Once)' },
+                  { value: 'every_1_minute', label: 'Every 1 Minute' },
+                  { value: 'every_5_minutes', label: 'Every 5 Minutes' },
+                  { value: 'every_1_hour', label: 'Every 1 Hour' },
+                ]}
                 value={formData.recurringInterval}
-                onChange={handleChange}
-              >
-                <option value="">None (Run Once)</option>
-                <option value="every_1_minute">Every 1 Minute</option>
-                <option value="every_5_minutes">Every 5 Minutes</option>
-                <option value="every_1_hour">Every 1 Hour</option>
-              </select>
+                onChange={(val) => handleSelectChange('recurringInterval', val)}
+              />
             </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">Scheduled At (Optional)</label>
-            <input 
-              type="datetime-local" 
-              name="scheduledAt" 
-              className="form-control" 
-              value={formData.scheduledAt}
-              onChange={handleChange}
-            />
+            <div className="datepicker-wrapper" style={{ position: 'relative' }}>
+              <DatePicker
+                selected={formData.scheduledAt ? new Date(formData.scheduledAt) : null}
+                onChange={(date: Date | null) => handleSelectChange('scheduledAt', date ? date.toISOString() : '')}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="MMMM d, yyyy h:mm aa"
+                placeholderText="Select Date & Time..."
+                className="form-control"
+                wrapperClassName="w-full"
+                isClearable
+              />
+            </div>
             <small style={{ color: 'var(--color-text)', display: 'block', marginTop: '0.25rem' }}>
               Leave blank to run immediately.
             </small>
