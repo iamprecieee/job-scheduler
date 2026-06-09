@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, PlusCircle, AlertOctagon } from 'lucide-react';
+import { LayoutDashboard, ListTodo, PlusCircle, AlertOctagon, Sun, Moon } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const Layout: React.FC = () => {
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
   const navItems = [
     { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/jobs', icon: <ListTodo size={20} />, label: 'Jobs' },
@@ -12,7 +24,7 @@ const Layout: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="grid-bg" style={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
       <motion.aside
         initial={{ x: -20, opacity: 0 }}
@@ -20,8 +32,8 @@ const Layout: React.FC = () => {
         transition={{ duration: 0.4, ease: 'easeOut' }}
         style={{
           width: 'var(--sidebar-width)',
-          backgroundColor: 'var(--bg-tertiary)',
-          borderRight: '1px solid var(--border)',
+          backgroundColor: 'var(--color-background)',
+          borderRight: 'var(--border-width) solid var(--border)',
           display: 'flex',
           flexDirection: 'column',
           position: 'fixed',
@@ -35,18 +47,19 @@ const Layout: React.FC = () => {
           <div style={{
             width: 32,
             height: 32,
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--accent-primary)',
+            borderRadius: 'var(--border-radius)',
+            background: 'var(--color-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 15px var(--accent-glow)'
+            border: '2px solid var(--border)',
+            boxShadow: '2px 2px 0px var(--border)'
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
           </div>
-          <span style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+          <span style={{ fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)' }}>
             Antigravity
           </span>
         </div>
@@ -61,11 +74,15 @@ const Layout: React.FC = () => {
                 alignItems: 'center',
                 gap: '0.75rem',
                 padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                backgroundColor: isActive ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
-                fontWeight: isActive ? 600 : 500,
-                transition: 'all 0.2s ease',
+                border: isActive ? 'var(--border-width) solid var(--border)' : 'var(--border-width) solid transparent',
+                borderRadius: 'var(--border-radius)',
+                color: 'var(--color-text)',
+                backgroundColor: isActive ? 'var(--bg-tertiary)' : 'transparent',
+                boxShadow: isActive ? '4px 4px 0px var(--border)' : 'none',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textTransform: 'uppercase',
+                transition: 'all 0.1s ease',
                 textDecoration: 'none',
               })}
             >
@@ -80,10 +97,28 @@ const Layout: React.FC = () => {
           ))}
         </nav>
         
-        <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <div style={{ padding: '1.5rem', borderTop: 'var(--border-width) solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>
             v1.0.0-beta
           </div>
+          <button 
+            onClick={toggleTheme}
+            style={{
+              background: 'transparent',
+              border: '2px solid var(--border)',
+              borderRadius: '50%',
+              width: '30px',
+              height: '30px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--color-text)',
+              boxShadow: '2px 2px 0px var(--border)'
+            }}
+          >
+            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
         </div>
       </motion.aside>
 

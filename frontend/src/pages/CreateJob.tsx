@@ -160,7 +160,7 @@ const CreateJob: React.FC = () => {
               value={formData.scheduledAt}
               onChange={handleChange}
             />
-            <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.25rem' }}>
+            <small style={{ color: 'var(--color-text)', display: 'block', marginTop: '0.25rem' }}>
               Leave blank to run immediately.
             </small>
           </div>
@@ -175,7 +175,7 @@ const CreateJob: React.FC = () => {
               onChange={handleChange}
               placeholder="UUID1, UUID2"
             />
-            <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.25rem' }}>
+            <small style={{ color: 'var(--color-text)', display: 'block', marginTop: '0.25rem' }}>
               Comma-separated Job IDs that must complete before this job runs.
             </small>
           </div>

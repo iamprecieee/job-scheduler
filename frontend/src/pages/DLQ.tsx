@@ -77,11 +77,11 @@ const DLQ: React.FC = () => {
         className="table-container"
       >
         {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text)' }}>
             Loading DLQ...
           </div>
         ) : entries.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text)' }}>
             No failed jobs in the DLQ.
           </div>
         ) : (
@@ -98,7 +98,7 @@ const DLQ: React.FC = () => {
             <tbody>
               {entries.map((entry) => (
                 <tr key={entry.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--color-text)' }}>
                     {entry.job_id.substring(0, 8)}...
                   </td>
                   <td style={{ 
@@ -111,7 +111,7 @@ const DLQ: React.FC = () => {
                     {entry.failure_reason}
                   </td>
                   <td style={{ fontSize: '0.85rem' }}>{formatDate(entry.entered_at)}</td>
-                  <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(entry.retry_attempted_at)}</td>
+                  <td style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>{formatDate(entry.retry_attempted_at)}</td>
                   <td>
                     <button
                       onClick={() => handleReplay(entry.id)}

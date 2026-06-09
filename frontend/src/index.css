@@ -1,83 +1,103 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 :root {
-  /* Rich Dark Mode Aesthetics */
-  --bg-primary: #0a0a0b;
-  --bg-secondary: #141415;
-  --bg-tertiary: #1c1c1f;
+  /* Retro Brutalism Light Theme */
+  --color-primary: rgb(169, 56, 56);
+  --color-ui: rgb(169, 56, 56);
+  --color-secondary: rgb(236, 236, 222);
+  --color-background: rgb(236, 236, 222);
+  --color-text: #2c2c2c;
+  --color-grid: rgba(169, 56, 56, 0.15);
+
+  /* Status Colors mapped to brutalism */
+  --status-pending: #d97706;
+  --status-processing: #2563eb;
+  --status-completed: #0d7a66;
+  --status-failed: #dc2626;
   
-  /* Text */
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
-  --text-muted: #52525b;
-  
-  /* Accents - Dynamic and Vibrant */
-  --accent-primary: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-glow: rgba(99, 102, 241, 0.2);
-  
-  /* Status Colors */
-  --status-pending: #f59e0b;
-  --status-processing: #3b82f6;
-  --status-completed: #10b981;
-  --status-failed: #ef4444;
-  --status-cancelled: #71717a;
-  
-  /* Status Glows */
-  --status-pending-glow: rgba(245, 158, 11, 0.15);
-  --status-processing-glow: rgba(59, 130, 246, 0.15);
-  --status-completed-glow: rgba(16, 185, 129, 0.15);
-  --status-failed-glow: rgba(239, 68, 68, 0.15);
-  
-  /* Borders and Glass */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(255, 255, 255, 0.2);
-  --glass-bg: rgba(20, 20, 21, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.05);
-  
-  /* Structural */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 24px;
-  --radius-full: 9999px;
-  
+  --shadow-card: 4px 4px 0px var(--color-ui);
+  --shadow-hover: 6px 6px 0px var(--color-ui);
+  --shadow-focus: 0 0 0 4px rgba(169, 56, 56, 0.3);
+
+  --border-radius: 4px; /* Harder corners for brutalism */
+  --border-width: 3px;
+  --border: var(--color-ui);
+
+  --bg-tertiary: rgba(0, 0, 0, 0.05); /* For subtle contrast blocks */
+
   /* Layout */
-  --container-width: 1200px;
   --sidebar-width: 260px;
+}
+
+[data-theme="dark"] {
+  /* Retro Brutalism Dark Theme */
+  --color-primary: rgb(255, 120, 120);
+  --color-ui: #b30000;
+  --color-secondary: rgb(30, 30, 35);
+  --color-background: rgb(18, 18, 22);
+  --color-text: rgb(255, 120, 120);
+  --color-grid: rgba(179, 0, 0, 0.25);
+
+  --status-pending: #fbbf24;
+  --status-processing: #60a5fa;
+  --status-completed: #2dd4bf;
+  --status-failed: #f87171;
+
+  --shadow-card: 4px 4px 0px var(--color-primary);
+  --shadow-hover: 6px 6px 0px var(--color-primary);
+  --shadow-focus: 0 0 0 4px rgba(255, 120, 120, 0.3);
+
+  --border: var(--color-primary);
+  
+  --bg-tertiary: rgba(255, 255, 255, 0.05);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  scrollbar-color: var(--color-ui) rgba(0, 0, 0, 0.1);
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  font-family: "Courier New", monospace;
+  background-color: var(--color-background);
+  color: var(--color-text);
   line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-weight: 600;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Glassmorphism Utilities */
+/* Grid Background */
+.grid-bg {
+  background-image:
+      linear-gradient(var(--color-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center;
+  min-height: 100vh;
+}
+
+/* Glass-panel renamed conceptually, but keeping class name for React compatibility */
 .glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  background-color: var(--color-background);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s ease;
+}
+
+.glass-panel:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-hover);
 }
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  letter-spacing: 1px;
 }
 
 h1 { font-size: 2.5rem; margin-bottom: 1rem; }
@@ -85,18 +105,22 @@ h2 { font-size: 1.8rem; margin-bottom: 0.8rem; }
 h3 { font-size: 1.4rem; margin-bottom: 0.6rem; }
 
 p {
-  color: var(--text-secondary);
+  color: var(--color-text);
+  opacity: 0.9;
 }
 
-/* Base Link */
 a {
-  color: var(--accent-primary);
-  text-decoration: none;
-  transition: color 0.2s ease;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  font-weight: bold;
 }
 
 a:hover {
-  color: var(--accent-hover);
+  background-color: var(--color-primary);
+  color: var(--color-background);
+  text-decoration: none;
 }
 
 /* Buttons */
@@ -105,53 +129,65 @@ a:hover {
   align-items: center;
   justify-content: center;
   padding: 0.6rem 1.2rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
+  font-family: "Courier New", monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid transparent;
+  transition: all 0.1s ease;
   gap: 0.5rem;
 }
 
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--border);
+}
+
 .btn-primary {
-  background: var(--accent-primary);
-  color: white;
-  box-shadow: 0 4px 14px var(--accent-glow);
+  background-color: var(--color-primary);
+  color: var(--color-background);
+  border-color: var(--color-primary);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px var(--accent-glow);
+  filter: brightness(1.1);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-hover);
 }
 
 .btn-secondary {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
+  /* Default btn style is fine for secondary */
 }
 
 .btn-secondary:hover {
-  background: var(--bg-secondary);
-  border-color: var(--border-focus);
+  background-color: var(--bg-tertiary);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-hover);
 }
 
 .btn-danger {
-  background: rgba(239, 68, 68, 0.1);
   color: var(--status-failed);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-color: var(--status-failed);
+  box-shadow: 4px 4px 0px var(--status-failed);
 }
 
 .btn-danger:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background-color: rgba(239, 68, 68, 0.1);
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0px var(--status-failed);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
+  filter: grayscale(100%);
 }
 
 /* Forms */
@@ -162,36 +198,40 @@ a:hover {
 .form-label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: bold;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .form-control {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  background-color: var(--color-background);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--border-radius);
+  color: var(--color-text);
   font-family: inherit;
-  font-size: 0.95rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: inset 0px 2px 4px rgba(0,0,0,0.05);
 }
 
 .form-control:focus {
   outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  box-shadow: var(--shadow-focus);
+  border-color: var(--color-primary);
 }
 
 /* Table Settings */
 .table-container {
   width: 100%;
   overflow-x: auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--border-radius);
+  background-color: var(--color-background);
+  box-shadow: var(--shadow-card);
 }
 
 table {
@@ -201,21 +241,27 @@ table {
 }
 
 th {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 0.85rem;
+  background-color: var(--border);
+  color: var(--color-background);
+  font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   padding: 1rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--border-width) solid var(--border);
+  border-right: var(--border-width) solid var(--border);
+}
+th:last-child {
+  border-right: none;
 }
 
 td {
   padding: 1rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.95rem;
-  color: var(--text-primary);
+  border-bottom: var(--border-width) solid var(--border);
+  border-right: var(--border-width) solid var(--border);
+  color: var(--color-text);
+  font-weight: 600;
+}
+td:last-child {
+  border-right: none;
 }
 
 tr:last-child td {
@@ -223,11 +269,11 @@ tr:last-child td {
 }
 
 tbody tr {
-  transition: background-color 0.15s ease;
+  transition: background-color 0.1s ease;
 }
 
 tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: var(--bg-tertiary);
 }
 
 /* Badge (Status/Priority) */
@@ -235,18 +281,21 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-full);
+  border: 2px solid;
+  border-radius: var(--border-radius);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  background-color: var(--color-background);
+  box-shadow: 2px 2px 0px;
 }
 
-.badge-pending { color: var(--status-pending); background: var(--status-pending-glow); border: 1px solid rgba(245, 158, 11, 0.2); }
-.badge-processing { color: var(--status-processing); background: var(--status-processing-glow); border: 1px solid rgba(59, 130, 246, 0.2); }
-.badge-completed { color: var(--status-completed); background: var(--status-completed-glow); border: 1px solid rgba(16, 185, 129, 0.2); }
-.badge-failed { color: var(--status-failed); background: var(--status-failed-glow); border: 1px solid rgba(239, 68, 68, 0.2); }
-.badge-cancelled { color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+.badge-pending { color: var(--status-pending); border-color: var(--status-pending); box-shadow: 2px 2px 0px var(--status-pending); }
+.badge-processing { color: var(--status-processing); border-color: var(--status-processing); box-shadow: 2px 2px 0px var(--status-processing); }
+.badge-completed { color: var(--status-completed); border-color: var(--status-completed); box-shadow: 2px 2px 0px var(--status-completed); }
+.badge-failed { color: var(--status-failed); border-color: var(--status-failed); box-shadow: 2px 2px 0px var(--status-failed); }
+.badge-cancelled { color: var(--color-text); opacity: 0.6; border-color: var(--color-text); box-shadow: 2px 2px 0px var(--color-text); }
 
 /* Animation Utils */
 @keyframes fadeIn {
@@ -255,24 +304,25 @@ tbody tr:hover {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.4s ease forwards;
 }
 
-/* Scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--color-background);
+  border-left: 1px solid var(--border);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-full);
+  background: var(--border);
+  border: 2px solid var(--color-background);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--color-primary);
 }

@@ -80,11 +80,11 @@ const Jobs: React.FC = () => {
         className="table-container"
       >
         {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text)' }}>
             Loading jobs...
           </div>
         ) : jobs.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text)' }}>
             No jobs found.
           </div>
         ) : (
@@ -105,7 +105,7 @@ const Jobs: React.FC = () => {
             <tbody>
               {jobs.map((job) => (
                 <tr key={job.id}>
-                  <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--color-text)' }}>
                     {job.id.substring(0, 8)}...
                   </td>
                   <td style={{ fontWeight: 500 }}>{job.type}</td>
@@ -114,7 +114,7 @@ const Jobs: React.FC = () => {
                   <td style={{ fontSize: '0.85rem' }}>{job.retry_count}</td>
                   <td style={{ fontSize: '0.85rem' }}>{formatDate(job.scheduled_at)}</td>
                   <td style={{ fontSize: '0.85rem' }}>{job.recurring_interval ? job.recurring_interval.replace(/_/g, ' ') : '-'}</td>
-                  <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(job.created_at)}</td>
+                  <td style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>{formatDate(job.created_at)}</td>
                   <td>
                     {job.status === 'pending' || job.status === 'processing' ? (
                       <button
@@ -127,7 +127,7 @@ const Jobs: React.FC = () => {
                         <Trash2 size={16} />
                       </button>
                     ) : (
-                      <span style={{ color: 'var(--text-muted)' }}>-</span>
+                      <span style={{ color: 'var(--color-text)' }}>-</span>
                     )}
                   </td>
                 </tr>

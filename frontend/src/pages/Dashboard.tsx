@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
     { label: 'Processing', value: stats.processing, icon: <Activity size={24} />, color: 'var(--status-processing)' },
     { label: 'Completed', value: stats.completed, icon: <CheckCircle size={24} />, color: 'var(--status-completed)' },
     { label: 'Failed', value: stats.failed, icon: <XCircle size={24} />, color: 'var(--status-failed)' },
-    { label: 'Cancelled', value: stats.cancelled, icon: <XCircle size={24} />, color: 'var(--text-muted)' },
+    { label: 'Cancelled', value: stats.cancelled, icon: <XCircle size={24} />, color: 'var(--color-text)' },
   ];
 
   return (
@@ -70,15 +70,15 @@ const Dashboard: React.FC = () => {
               backgroundColor: isConnected ? 'var(--status-completed)' : 'var(--status-failed)',
               boxShadow: isConnected ? '0 0 10px var(--status-completed)' : 'none'
             }} />
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>
               {isConnected ? 'SSE Connected' : 'Disconnected'}
             </span>
           </div>
           <div style={{ width: 1, height: 24, backgroundColor: 'var(--border)' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Activity size={16} color="var(--accent-primary)" />
+            <Activity size={16} color="var(--color-primary)" />
             <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>{queueLength}</span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>in queue</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>in queue</span>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ const Dashboard: React.FC = () => {
             style={{ padding: '1.5rem' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>
+              <div style={{ color: 'var(--color-text)', fontSize: '0.9rem', fontWeight: 500 }}>
                 {card.label}
               </div>
               <div style={{ color: card.color }}>
