@@ -31,7 +31,7 @@ cp .env.example .env
 uv run python -m aiosmtpd -n -l localhost:8025 &
 
 # Start Backend
-uv run fastapi run
+uv run uvicorn app.main:app --no-access-log --log-config logging.yaml 
 
 # Frontend Setup (in a new terminal)
 cd ../frontend
@@ -57,6 +57,17 @@ curl -X POST http://localhost:8000/api/v1/jobs \
   -d '{"type": "send_email", "payload": "{}", "priority": 1}'
 ```
 
+</details>
+
+<details>
+<summary><strong>Testing the DAG Workflow</strong></summary>
+
+To test job dependencies where a "Child" job waits for a "Parent" job to finish:
+1. **Create the Parent Job**: Go to the UI and create a `send_email` job. Schedule it 1-2 minutes in the future so you have time.
+2. **Copy the ID**: Copy the UUID of the newly created Parent Job from the dashboard.
+3. **Create the Child Job**: Create another job, and paste the Parent's UUID into the **Dependencies** field. Leave the schedule blank.
+4. **Observe**: The Child Job will immediately go to `pending`, but the workers will refuse to run it, re-enqueuing it with a 5-second backoff.
+5. **Completion**: Once the Parent Job reaches `completed`, the worker will see the dependency is satisfied and automatically begin processing the Child Job!
 </details>
 
 ---
