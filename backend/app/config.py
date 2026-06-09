@@ -1,4 +1,6 @@
-from pydantic_settings import BaseSettings
+from typing import ClassVar
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -10,7 +12,7 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/job_scheduler"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/job_scheduler"
 
     # SMTP (aiosmtpd local mock)
     smtp_host: str = "localhost"
@@ -27,7 +29,9 @@ class Settings(BaseSettings):
     scheduled_job_check_interval_seconds: float = 5.0
     aging_recalc_interval_seconds: float = 60.0
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8"
+    )
 
 
 settings = Settings()
