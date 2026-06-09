@@ -1,4 +1,5 @@
 import asyncio
+import random
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -8,6 +9,7 @@ from sqlalchemy import select
 
 from app.config import settings
 from app.database import async_session_factory
+from app.handlers import EmailHandler
 from app.models.dependency import JobDependency
 from app.models.dlq import DeadLetterEntry
 from app.models.job import Job, JobStatus
@@ -18,8 +20,6 @@ job_queue: SchedulerQueue = HeapQueue()
 
 
 def get_retry_jitter(attempt: int) -> float:
-    import random
-
     if attempt == 1:
         return 1.0 + random.uniform(-0.5, 0.5)
     elif attempt == 2:
@@ -64,7 +64,8 @@ async def process_job(job_id: uuid.UUID) -> None:
 
         try:
             if job.type == "send_email":
-                pass
+                handler = EmailHandler()
+                await handler.execute(job.payload)
             else:
                 await asyncio.sleep(0.5)
 
