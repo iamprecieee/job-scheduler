@@ -5,12 +5,17 @@ from collections.abc import Callable
 from fastapi import Request, Response
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response as StarletteResponse
 
 from app.logging_system.context import RequestContextLogger
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware that instruments every HTTP request with structured logging."""
+    """Middleware that instruments every HTTP request with structured logging.
+
+    Buffers the response body only when status >= 400 so error detail appears
+    in the server log alongside the status code.
+    """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         request_id = uuid.uuid7().hex
@@ -40,12 +45,42 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 raise
 
             duration = (time.perf_counter() - start_time) * 1000
-            level = "WARNING" if response.status_code >= 400 else "INFO"
+            status_code = response.status_code
 
-            if not is_health or response.status_code >= 400:
-                logger.log(
-                    level, "← {} {} {} {:.2f}ms", method, path, response.status_code, duration
-                )
+            if not is_health or status_code >= 400:
+                level = "WARNING" if status_code >= 400 else "INFO"
+
+                if status_code >= 400:
+                    body_bytes = b""
+                    async for chunk in response.body_iterator:  # type: ignore[attr-defined]
+                        body_bytes += chunk if isinstance(chunk, bytes) else chunk.encode()
+
+                    try:
+                        import json
+
+                        detail = json.loads(body_bytes).get(
+                            "detail", body_bytes.decode(errors="replace")
+                        )
+                    except Exception:
+                        detail = body_bytes.decode(errors="replace")
+
+                    logger.log(
+                        level,
+                        "← {} {} {} {:.2f}ms | {}",
+                        method,
+                        path,
+                        status_code,
+                        duration,
+                        detail,
+                    )
+                    response = StarletteResponse(
+                        content=body_bytes,
+                        status_code=status_code,
+                        headers=dict(response.headers),
+                        media_type=response.media_type,
+                    )
+                else:
+                    logger.log(level, "← {} {} {} {:.2f}ms", method, path, status_code, duration)
 
             response.headers["X-Request-ID"] = request_id
             return response

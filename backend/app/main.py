@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.exception_handlers import register_exception_handlers
 from app.api.routes import api_router
 from app.config import settings
 from app.logging_system.middleware import RequestLoggingMiddleware
@@ -53,3 +54,6 @@ app.include_router(api_router, prefix=settings.api_v1_str)
 @app.get("/health")
 async def health_check() -> dict[str, str]:
     return {"status": "ok"}
+
+
+register_exception_handlers(app)
