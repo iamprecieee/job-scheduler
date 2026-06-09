@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from app.config import settings
 from app.database import async_session_factory
-from app.handlers import EmailHandler
+from app.handlers import get_handler
 from app.models.dependency import JobDependency
 from app.models.dlq import DeadLetterEntry
 from app.models.job import Job, JobStatus
@@ -51,6 +51,7 @@ async def process_job(job_id: uuid.UUID) -> None:
         dependencies = dep_result.scalars().all()
 
         if any(d.status != JobStatus.COMPLETED for d in dependencies):
+            # Dependency not yet satisfied — re-enqueue with a short backoff.
             delay = 5.0
             scheduled = time.time() + delay
             job_queue.push(
@@ -63,11 +64,8 @@ async def process_job(job_id: uuid.UUID) -> None:
         await session.commit()
 
         try:
-            if job.type == "send_email":
-                handler = EmailHandler()
-                await handler.execute(job.payload)
-            else:
-                await asyncio.sleep(0.5)
+            handler = get_handler(job.type)
+            await handler.execute(job.payload)
 
             job.status = JobStatus.COMPLETED
             job.completed_at = datetime.now(UTC)
@@ -101,20 +99,26 @@ async def process_job(job_id: uuid.UUID) -> None:
                     )
 
             await session.commit()
-            logger.info(f"Job {job.id} completed successfully")
+            logger.info("Job {} completed", job.id)
 
-        except Exception as e:
-            logger.error(f"Job {job.id} failed: {str(e)}")
+        except Exception as exc:
+            # Log with full traceback so post-mortems have context.
+            logger.opt(exception=True).error("Job {} failed: {}", job.id, exc)
+
             job.retry_count += 1
-            job.error_message = str(e)
+            job.error_message = str(exc)
 
             if job.retry_count > settings.max_retries:
                 job.status = JobStatus.FAILED
                 job.completed_at = datetime.now(UTC)
 
-                dlq_entry = DeadLetterEntry(job_id=job.id, failure_reason=str(e))
+                dlq_entry = DeadLetterEntry(job_id=job.id, failure_reason=str(exc))
                 session.add(dlq_entry)
-                logger.warning(f"Job {job.id} moved to DLQ after {settings.max_retries} retries")
+                logger.warning(
+                    "Job {} exhausted {} retries — moved to DLQ",
+                    job.id,
+                    settings.max_retries,
+                )
             else:
                 job.status = JobStatus.PENDING
                 job.started_at = None
@@ -123,7 +127,12 @@ async def process_job(job_id: uuid.UUID) -> None:
                 next_run_ts = time.time() + jitter
                 job.scheduled_at = datetime.fromtimestamp(next_run_ts, tz=UTC)
 
-                logger.info(f"Job {job.id} scheduled for retry {job.retry_count} in {jitter:.2f}s")
+                logger.info(
+                    "Job {} retry {} scheduled in {:.2f}s",
+                    job.id,
+                    job.retry_count,
+                    jitter,
+                )
                 job_queue.push(
                     str(job.id), job.effective_priority, next_run_ts, job.created_at.timestamp()
                 )
@@ -147,8 +156,8 @@ async def worker_loop() -> None:
         except asyncio.CancelledError:
             logger.info("Worker loop cancelled")
             break
-        except Exception as e:
-            logger.error(f"Worker loop error: {e}")
+        except Exception as exc:
+            logger.opt(exception=True).error("Worker loop error: {}", exc)
             await asyncio.sleep(1.0)
 
 
@@ -177,8 +186,8 @@ async def db_sync_loop() -> None:
 
         except asyncio.CancelledError:
             break
-        except Exception as e:
-            logger.error(f"DB sync loop error: {e}")
+        except Exception as exc:
+            logger.opt(exception=True).error("DB sync loop error: {}", exc)
             await asyncio.sleep(5.0)
 
 
@@ -223,10 +232,10 @@ async def aging_loop() -> None:
 
                 if updated_count > 0:
                     await session.commit()
-                    logger.debug(f"Aged {updated_count} jobs")
+                    logger.debug("Aged {} jobs", updated_count)
 
         except asyncio.CancelledError:
             break
-        except Exception as e:
-            logger.error(f"Aging loop error: {e}")
+        except Exception as exc:
+            logger.opt(exception=True).error("Aging loop error: {}", exc)
             await asyncio.sleep(5.0)

@@ -1,0 +1,7 @@
+dist/
+.venv/
+*.egg*
+.ruff_cache/
+__pycache__/
+logs/
+.env

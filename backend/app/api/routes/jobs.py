@@ -1,9 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
+from app.handlers import get_handler
 from app.schemas.job import CreateJobRequest, JobListResponse, JobResponse
 from app.services.job_service import JobService
 
@@ -12,7 +13,13 @@ router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 @router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
 async def create_job(request: CreateJobRequest, db: AsyncSession = Depends(get_db)) -> JobResponse:
-    """Create a new job."""
+    """Create a new job. Validates job type against the handler registry before persisting."""
+    try:
+        get_handler(request.type)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
     return await JobService.create_job(db, request)
 
 

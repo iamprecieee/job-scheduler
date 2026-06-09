@@ -9,17 +9,18 @@ from app.config import settings
 
 
 class EmailHandler:
-    """Handler for sending emails using aiosmtpd.
+    """Handler for sending emails via the local aiosmtpd mock SMTP server.
 
-    The payload must contain:
-    - to: str (recipient email)
-    - subject: str (email subject)
-    - body: str (email body content)
+    Payload keys:
+    - to: str      — recipient address
+    - subject: str — email subject line
+    - body: str    — plain-text body
     """
 
     async def execute(self, payload: dict[str, Any]) -> None:
-        if not all(k in payload for k in ["to", "subject", "body"]):
-            raise ValueError("Email payload must contain 'to', 'subject', and 'body'")
+        missing = {"to", "subject", "body"} - payload.keys()
+        if missing:
+            raise ValueError("Email payload missing required keys: {}", missing)
 
         await asyncio.to_thread(self._send_email_sync, payload)
 
@@ -30,10 +31,9 @@ class EmailHandler:
         msg["From"] = settings.alert_email_from
         msg["To"] = payload["to"]
 
-        try:
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-                server.send_message(msg)
-            logger.info(f"Email sent successfully to {payload['to']}")
-        except Exception as e:
-            logger.error(f"Failed to send email to {payload['to']}: {e}")
-            raise
+        # Allow the caller (worker) to handle the exception and decide retry/DLQ;
+        # we only raise — no duplicate log here.
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
+            server.send_message(msg)
+
+        logger.info("Email sent to {}", payload["to"])
