@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Activity, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiClient } from '../api/client';
@@ -6,6 +7,7 @@ import type { JobListResponse } from '../api/client';
 import { useSSE } from '../hooks/useSSE';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { queueLength, isConnected } = useSSE();
   const [stats, setStats] = useState({
     pending: 0,
@@ -46,11 +48,11 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const statCards = [
-    { label: 'Pending Jobs', value: stats.pending, icon: <Clock size={24} />, color: 'var(--status-pending)' },
-    { label: 'Processing', value: stats.processing, icon: <Activity size={24} />, color: 'var(--status-processing)' },
-    { label: 'Completed', value: stats.completed, icon: <CheckCircle size={24} />, color: 'var(--status-completed)' },
-    { label: 'Failed', value: stats.failed, icon: <XCircle size={24} />, color: 'var(--status-failed)' },
-    { label: 'Cancelled', value: stats.cancelled, icon: <XCircle size={24} />, color: 'var(--color-text)' },
+    { label: 'Pending Jobs', value: stats.pending, icon: <Clock size={24} />, color: 'var(--status-pending)', link: '/jobs?status=pending' },
+    { label: 'Processing', value: stats.processing, icon: <Activity size={24} />, color: 'var(--status-processing)', link: '/jobs?status=processing' },
+    { label: 'Completed', value: stats.completed, icon: <CheckCircle size={24} />, color: 'var(--status-completed)', link: '/jobs?status=completed' },
+    { label: 'Failed', value: stats.failed, icon: <XCircle size={24} />, color: 'var(--status-failed)', link: '/jobs?status=failed' },
+    { label: 'Cancelled', value: stats.cancelled, icon: <XCircle size={24} />, color: 'var(--color-text)', link: '/jobs?status=cancelled' },
   ];
 
   return (
@@ -75,7 +77,7 @@ const Dashboard: React.FC = () => {
             </span>
           </div>
           <div style={{ width: 1, height: 24, backgroundColor: 'var(--border)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => navigate('/jobs?status=pending')}>
             <Activity size={16} color="var(--color-primary)" />
             <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>{queueLength}</span>
             <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>in queue</span>
@@ -91,7 +93,8 @@ const Dashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: idx * 0.1 }}
-            style={{ padding: '1.5rem' }}
+            onClick={() => navigate(card.link)}
+            style={{ padding: '1.5rem', cursor: 'pointer' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
               <div style={{ color: 'var(--color-text)', fontSize: '0.9rem', fontWeight: 500 }}>

@@ -82,12 +82,19 @@ class JobService:
         return JobResponse.model_validate(job)
 
     @staticmethod
-    async def list_jobs(session: AsyncSession, skip: int = 0, limit: int = 100) -> JobListResponse:
+    async def list_jobs(
+        session: AsyncSession, skip: int = 0, limit: int = 100, status: str | None = None
+    ) -> JobListResponse:
         stmt = select(Job).order_by(desc(Job.created_at)).offset(skip).limit(limit)
+        count_stmt = select(func.count()).select_from(Job)
+
+        if status:
+            stmt = stmt.where(Job.status == status)
+            count_stmt = count_stmt.where(Job.status == status)
+
         result = await session.execute(stmt)
         jobs = result.scalars().all()
 
-        count_stmt = select(func.count()).select_from(Job)
         total_result = await session.execute(count_stmt)
         total = total_result.scalar() or 0
 

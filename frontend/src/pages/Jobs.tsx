@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { RefreshCw, Trash2, Eye, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { RefreshCw, Trash2, Eye, X, Filter } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiClient } from '../api/client';
 import type { Job, JobListResponse } from '../api/client';
@@ -12,11 +13,23 @@ const Jobs: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [canceling, setCanceling] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [total, setTotal] = useState(0);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusFilter = searchParams.get('status');
+  const pageParam = searchParams.get('page');
+  const page = pageParam ? parseInt(pageParam, 10) : 1;
+  const limit = 10;
 
   const fetchJobs = async () => {
     try {
-      const response = await apiClient.get<JobListResponse>('/jobs?limit=100');
+      const skip = (page - 1) * limit;
+      let url = `/jobs?limit=${limit}&skip=${skip}`;
+      if (statusFilter) url += `&status=${statusFilter}`;
+      
+      const response = await apiClient.get<JobListResponse>(url);
       setJobs(response.jobs || []);
+      setTotal(response.total || 0);
     } catch (error) {
       console.error('Failed to fetch jobs', error);
     } finally {
@@ -29,7 +42,7 @@ const Jobs: React.FC = () => {
     fetchJobs();
     const interval = setInterval(fetchJobs, 10000); // Poll every 10s
     return () => clearInterval(interval);
-  }, []);
+  }, [page, statusFilter]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -64,14 +77,34 @@ const Jobs: React.FC = () => {
           <p>View and manage all background jobs.</p>
         </div>
         
-        <button 
-          onClick={handleRefresh} 
-          className="btn btn-secondary"
-          disabled={refreshing}
-        >
-          <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
-          Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {statusFilter && (
+            <div className="badge badge-pending" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text)', borderColor: 'var(--border)' }}>
+              <Filter size={14} />
+              Status: {statusFilter}
+              <button 
+                onClick={() => {
+                  setSearchParams(prev => {
+                    prev.delete('status');
+                    prev.set('page', '1');
+                    return prev;
+                  });
+                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)', padding: 0, display: 'flex' }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+          <button 
+            onClick={handleRefresh} 
+            className="btn btn-secondary"
+            disabled={refreshing}
+          >
+            <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <motion.div
@@ -143,6 +176,39 @@ const Jobs: React.FC = () => {
               ))}
             </tbody>
           </table>
+        )}
+        
+        {total > 0 && (
+          <div style={{ 
+            padding: '1rem', 
+            borderTop: 'var(--border-width) solid var(--border)',
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            backgroundColor: 'var(--bg-tertiary)'
+          }}>
+            <span style={{ fontWeight: 'bold' }}>
+              Page {page} of {Math.ceil(total / limit) || 1} <span style={{ color: 'var(--text-muted)', fontWeight: 'normal' }}>(Total: {total} jobs)</span>
+            </span>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                className="btn btn-secondary" 
+                disabled={page <= 1} 
+                onClick={() => setSearchParams(prev => { prev.set('page', String(page - 1)); return prev; })}
+                style={{ padding: '0.4rem 0.8rem' }}
+              >
+                Previous
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                disabled={page >= Math.ceil(total / limit)} 
+                onClick={() => setSearchParams(prev => { prev.set('page', String(page + 1)); return prev; })}
+                style={{ padding: '0.4rem 0.8rem' }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         )}
       </motion.div>
 

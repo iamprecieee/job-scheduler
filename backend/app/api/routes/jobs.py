@@ -27,10 +27,11 @@ async def create_job(request: CreateJobRequest, db: AsyncSession = Depends(get_d
 async def list_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    status_filter: str | None = Query(None, alias="status"),
     db: AsyncSession = Depends(get_db),
 ) -> JobListResponse:
-    """List all jobs with pagination."""
-    return await JobService.list_jobs(db, skip=skip, limit=limit)
+    """List all jobs with pagination and optional status filter."""
+    return await JobService.list_jobs(db, skip=skip, limit=limit, status=status_filter)
 
 
 @router.get("/{job_id}", response_model=JobResponse)
