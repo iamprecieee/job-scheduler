@@ -3,9 +3,9 @@ import Layout from './components/Layout';
 
 import Dashboard from './pages/Dashboard';
 import Jobs from './pages/Jobs';
+import CreateJob from './pages/CreateJob';
 
 // Placeholder components for pages until we build them
-const CreateJob = () => <div><h1>Create Job</h1><p>Form to create a job will go here.</p></div>;
 const DLQ = () => <div><h1>Dead Letter Queue</h1><p>Failed jobs will go here.</p></div>;
 
 function App() {
