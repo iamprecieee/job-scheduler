@@ -8,6 +8,23 @@ from loguru import logger
 from app.logging_system.context import request_context
 
 
+class LogFormat:
+    """Provides formatting strings for console and file sinks."""
+
+    @staticmethod
+    def console_format(record: Any) -> str:
+        return (
+            "<dim>{time:YYYY-MM-DD HH:mm:ss.SSS}</dim> | "
+            "<level>{level:<8}</level> | "
+            "<cyan>{name}:{function}:{line}</cyan> - "
+            "<level>{message}</level>\n"
+        )
+
+    @staticmethod
+    def json_format(record: Any) -> str:
+        return "{message}\n"
+
+
 class InterceptHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         try:
@@ -66,18 +83,7 @@ def setup_logging(
         serialize=not is_local,
         backtrace=is_local,
         diagnose=is_local,  # Never leak variable values in production
-        format=(
-            lambda r: (
-                (
-                    "<dim>{time:YYYY-MM-DD HH:mm:ss.SSS}</dim> | "
-                    "<level>{level:<8}</level> | "
-                    "<cyan>{name}:{function}:{line}</cyan> - "
-                    "<level>{message}</level>\n"
-                )
-                if is_local
-                else "{message}\n"
-            )
-        ),
+        format=LogFormat.console_format if is_local else LogFormat.json_format,
     )
 
     # Ensure log directories exist

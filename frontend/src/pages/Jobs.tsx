@@ -95,7 +95,9 @@ const Jobs: React.FC = () => {
                 <th>Type</th>
                 <th>Priority</th>
                 <th>Status</th>
+                <th>Retries</th>
                 <th>Scheduled For</th>
+                <th>Interval</th>
                 <th>Created At</th>
                 <th>Actions</th>
               </tr>
@@ -109,7 +111,9 @@ const Jobs: React.FC = () => {
                   <td style={{ fontWeight: 500 }}>{job.type}</td>
                   <td><PriorityBadge priority={job.priority} /></td>
                   <td><StatusBadge status={job.status} /></td>
+                  <td style={{ fontSize: '0.85rem' }}>{job.retry_count}</td>
                   <td style={{ fontSize: '0.85rem' }}>{formatDate(job.scheduled_at)}</td>
+                  <td style={{ fontSize: '0.85rem' }}>{job.recurring_interval ? job.recurring_interval.replace(/_/g, ' ') : '-'}</td>
                   <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(job.created_at)}</td>
                   <td>
                     {job.status === 'pending' || job.status === 'processing' ? (

@@ -12,6 +12,7 @@ const Dashboard: React.FC = () => {
     processing: 0,
     completed: 0,
     failed: 0,
+    cancelled: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +27,7 @@ const Dashboard: React.FC = () => {
           processing: jobs.filter(j => j.status === 'processing').length,
           completed: jobs.filter(j => j.status === 'completed').length,
           failed: jobs.filter(j => j.status === 'failed').length,
+          cancelled: jobs.filter(j => j.status === 'cancelled').length,
         };
         
         setStats(counts);
@@ -48,6 +50,7 @@ const Dashboard: React.FC = () => {
     { label: 'Processing', value: stats.processing, icon: <Activity size={24} />, color: 'var(--status-processing)' },
     { label: 'Completed', value: stats.completed, icon: <CheckCircle size={24} />, color: 'var(--status-completed)' },
     { label: 'Failed', value: stats.failed, icon: <XCircle size={24} />, color: 'var(--status-failed)' },
+    { label: 'Cancelled', value: stats.cancelled, icon: <XCircle size={24} />, color: 'var(--text-muted)' },
   ];
 
   return (

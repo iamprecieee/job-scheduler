@@ -3,6 +3,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
+from loguru import logger
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,6 +64,14 @@ class JobService:
             str(job.id), job.effective_priority, scheduled_timestamp, job.created_at.timestamp()
         )
 
+        logger.info(
+            "Job {} created | type={} priority={} scheduled={}",
+            job.id,
+            job.type,
+            job.priority,
+            bool(job.scheduled_at),
+        )
+
         return JobResponse.model_validate(job)
 
     @staticmethod
@@ -86,6 +95,12 @@ class JobService:
 
     @staticmethod
     async def cancel_job(session: AsyncSession, job_id: uuid.UUID) -> JobResponse:
+        """Cancel a pending or processing job.
+
+        If a job is already PROCESSING, cancelling it sets the status to CANCELLED
+        and removes it from the queue, but it does NOT interrupt the currently running
+        handler execution. The handler will run to completion.
+        """
         job = await session.get(Job, job_id)
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
@@ -98,5 +113,7 @@ class JobService:
         await session.refresh(job)
 
         job_queue.remove(str(job.id))
+
+        logger.info("Job {} cancelled", job.id)
 
         return JobResponse.model_validate(job)

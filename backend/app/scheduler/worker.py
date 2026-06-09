@@ -63,6 +63,8 @@ async def process_job(job_id: uuid.UUID) -> None:
         job.started_at = datetime.now(UTC)
         await session.commit()
 
+        logger.info("Job {} started processing", job.id)
+
         try:
             handler = get_handler(job.type)
             await handler.execute(job.payload)
