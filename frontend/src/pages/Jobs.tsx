@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { apiClient, Job, JobListResponse } from '../api/client';
+import { apiClient } from '../api/client';
+import type { Job, JobListResponse } from '../api/client';
 import StatusBadge from '../components/StatusBadge';
 import PriorityBadge from '../components/PriorityBadge';
 

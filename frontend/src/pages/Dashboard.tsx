@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { motion } from 'motion/react';
-import { apiClient, JobListResponse } from '../api/client';
+import { apiClient } from '../api/client';
+import type { JobListResponse } from '../api/client';
 import { useSSE } from '../hooks/useSSE';
 
 const Dashboard: React.FC = () => {

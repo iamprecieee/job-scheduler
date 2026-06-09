@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobStatus } from '../api/client';
+import type { JobStatus } from '../api/client';
 
 interface StatusBadgeProps {
   status: JobStatus;

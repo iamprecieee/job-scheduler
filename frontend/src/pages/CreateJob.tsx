@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Save, AlertCircle } from 'lucide-react';
-import { apiClient, CreateJobRequest } from '../api/client';
+import { apiClient } from '../api/client';
+import type { CreateJobRequest } from '../api/client';
 
 const CreateJob: React.FC = () => {
   const navigate = useNavigate();
