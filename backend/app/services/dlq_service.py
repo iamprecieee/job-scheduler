@@ -1,8 +1,9 @@
 import time
 import uuid
-from datetime import UTC
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
+from loguru import logger
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -51,18 +52,18 @@ class DLQService:
         if not job:
             raise HTTPException(status_code=404, detail="Associated job not found")
 
+        # Snapshot the response before the entry is deleted so we can return it.
+        response = DLQEntryResponse.model_validate(entry)
+
         job.status = JobStatus.PENDING
         job.retry_count = 0
         job.error_message = None
 
-        from datetime import datetime
-
-        now = datetime.now(UTC)
-        entry.retry_attempted_at = now
-
+        await session.delete(entry)
         await session.commit()
-        await session.refresh(entry)
 
         job_queue.push(str(job.id), job.effective_priority, time.time(), job.created_at.timestamp())
 
-        return DLQEntryResponse.model_validate(entry)
+        logger.info("DLQ entry {} replayed — job {} re-queued", entry_id, job.id)
+
+        return response
