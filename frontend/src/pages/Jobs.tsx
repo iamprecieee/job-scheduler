@@ -15,7 +15,7 @@ const Jobs: React.FC = () => {
   const fetchJobs = async () => {
     try {
       const response = await apiClient.get<JobListResponse>('/jobs?limit=100');
-      setJobs(response.items);
+      setJobs(response.jobs || []);
     } catch (error) {
       console.error('Failed to fetch jobs', error);
     } finally {

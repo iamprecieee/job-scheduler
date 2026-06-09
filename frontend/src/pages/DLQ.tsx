@@ -13,7 +13,7 @@ const DLQ: React.FC = () => {
   const fetchDLQ = async () => {
     try {
       const response = await apiClient.get<DLQListResponse>('/dlq?limit=100');
-      setEntries(response.items);
+      setEntries(response.entries || []);
     } catch (error) {
       console.error('Failed to fetch DLQ entries', error);
     } finally {

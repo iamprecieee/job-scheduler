@@ -19,7 +19,7 @@ const Dashboard: React.FC = () => {
     const fetchStats = async () => {
       try {
         const response = await apiClient.get<JobListResponse>('/jobs?limit=1000');
-        const jobs = response.items;
+        const jobs = response.jobs || [];
         
         const counts = {
           pending: jobs.filter(j => j.status === 'pending').length,

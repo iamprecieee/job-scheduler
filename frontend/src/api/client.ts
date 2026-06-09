@@ -82,10 +82,8 @@ export interface Job {
 }
 
 export interface JobListResponse {
-  items: Job[];
+  jobs: Job[];
   total: number;
-  skip: number;
-  limit: number;
 }
 
 export interface DeadLetterEntry {
@@ -97,10 +95,8 @@ export interface DeadLetterEntry {
 }
 
 export interface DLQListResponse {
-  items: DeadLetterEntry[];
+  entries: DeadLetterEntry[];
   total: number;
-  skip: number;
-  limit: number;
 }
 
 export interface CreateJobRequest {
