@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "https://localhost:5173",
     ]
+    admin_token: str = "supersecret-dev-token"
 
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/job_scheduler"

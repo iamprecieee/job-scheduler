@@ -10,6 +10,7 @@ from app.config import settings
 from app.logging_system.middleware import RequestLoggingMiddleware
 from app.logging_system.setup import setup_logging
 from app.scheduler.worker import aging_loop, db_sync_loop, worker_loop
+from app.services.alert_service import alert_loop
 
 
 @asynccontextmanager
@@ -19,15 +20,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     worker_task = asyncio.create_task(worker_loop())
     sync_task = asyncio.create_task(db_sync_loop())
     aging_task = asyncio.create_task(aging_loop())
+    alert_task = asyncio.create_task(alert_loop())
 
     yield
 
     worker_task.cancel()
     sync_task.cancel()
     aging_task.cancel()
+    alert_task.cancel()
 
     try:
-        await asyncio.gather(worker_task, sync_task, aging_task, return_exceptions=True)
+        await asyncio.gather(worker_task, sync_task, aging_task, alert_task, return_exceptions=True)
     except asyncio.CancelledError:
         pass
 
