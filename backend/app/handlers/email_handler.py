@@ -5,6 +5,8 @@ from typing import Any
 
 from loguru import logger
 
+from app.config import settings
+
 
 class EmailHandler:
     """Handler for sending emails using aiosmtpd.
@@ -25,11 +27,11 @@ class EmailHandler:
         msg = EmailMessage()
         msg.set_content(payload["body"])
         msg["Subject"] = payload["subject"]
-        msg["From"] = "noreply@job-scheduler.local"
+        msg["From"] = settings.alert_email_from
         msg["To"] = payload["to"]
 
         try:
-            with smtplib.SMTP("127.0.0.1", 8025, timeout=10) as server:
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
                 server.send_message(msg)
             logger.info(f"Email sent successfully to {payload['to']}")
         except Exception as e:

@@ -5,11 +5,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Server
-    app_name: str = "job-scheduler"
+    project_name: str = "job-scheduler"
+    api_v1_str: str = "/api/v1"
     environment: str = "development"
     log_level: str = "INFO"
     host: str = "0.0.0.0"
     port: int = 8000
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "https://localhost:5173",
+    ]
 
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/job_scheduler"
