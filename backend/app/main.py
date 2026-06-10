@@ -53,6 +53,10 @@ tags_metadata = [
         "description": "Dead Letter Queue management for jobs with exhaausted retry limits.",
     },
     {
+        "name": "Inbox",
+        "description": "Browse sent emails and subscribe to real-time inbox notifications via SSE.",
+    },
+    {
         "name": "Metrics",
         "description": "Real-time metrics and Server-Sent Events (SSE) for dashboard monitoring.",
     },
@@ -62,6 +66,7 @@ app = FastAPI(
     title="Job Scheduler API",
     version="1.0.0",
     openapi_tags=tags_metadata,
+    lifespan=lifespan,
     docs_url=f"{settings.api_v1_str}/docs",
     openapi_url=f"{settings.api_v1_str}/openapi.json",
     redoc_url=f"{settings.api_v1_str}/redoc",
