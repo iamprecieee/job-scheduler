@@ -13,7 +13,7 @@ Environment="DATABASE_URL=postgresql+asyncpg://$DB_USER:$DB_PASSWORD@localhost:5
 Environment="ENVIRONMENT=production"
 
 # Start uvicorn with 4 workers. The background scheduler worker runs inside the FastAPI lifespan.
-ExecStart=/var/www/job-scheduler/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --no-access-log --log-config logging.yaml
+ExecStart=/var/www/job-scheduler/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --proxy-headers --forwarded-allow-ips="*" --no-access-log --log-config logging.yaml
 
 Restart=always
 RestartSec=5

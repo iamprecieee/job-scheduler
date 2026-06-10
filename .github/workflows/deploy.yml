@@ -39,6 +39,10 @@ jobs:
             alembic upgrade head || echo "No migrations or migration failed, skipping..."
             cd ..
             
+            # Update backend service config
+            sudo cp deploy/job-scheduler.service /etc/systemd/system/job-scheduler.service
+            sudo systemctl daemon-reload
+            
             # Restart backend service
             sudo systemctl restart job-scheduler
             
