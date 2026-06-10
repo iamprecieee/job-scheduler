@@ -27,8 +27,14 @@ class TimingWheel:
         if job_id in self._entries:
             self.remove(job_id)
 
-        delay = max(0, int(scheduled_at) - self.current_tick)
+        delay = int(scheduled_at) - self.current_tick
         entry = (priority, scheduled_at, created_at, job_id)
+
+        if delay <= 0:
+            self._ready_buffer.append(entry)
+            self._ready_buffer.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
+            self._entries[job_id] = ("ready", -1, entry)
+            return
 
         if delay < self.fine_slots:
             bucket_idx = (self.current_tick + delay) % self.fine_slots
@@ -61,7 +67,7 @@ class TimingWheel:
             for entry in self.fine_wheel[fine_idx]:
                 if entry[3] in self._entries:
                     self._ready_buffer.append(entry)
-                    del self._entries[entry[3]]
+                    self._entries[entry[3]] = ("ready", -1, entry)
             self.fine_wheel[fine_idx].clear()
 
             if fine_idx == 0:
@@ -80,7 +86,9 @@ class TimingWheel:
     def pop(self) -> str | None:
         self._advance_clock()
         if self._ready_buffer:
-            return self._ready_buffer.pop()[3]
+            job_id = self._ready_buffer.pop()[3]
+            del self._entries[job_id]
+            return job_id
         return None
 
     def peek(self) -> str | None:
@@ -95,17 +103,15 @@ class TimingWheel:
             if wheel == "fine":
                 if entry in self.fine_wheel[idx]:
                     self.fine_wheel[idx].remove(entry)
-            else:
+            elif wheel == "coarse":
                 if entry in self.coarse_wheel[idx]:
                     self.coarse_wheel[idx].remove(entry)
+            elif wheel == "ready":
+                if entry in self._ready_buffer:
+                    self._ready_buffer.remove(entry)
             return True
 
-        # Check buffer
-        for idx, entry in enumerate(self._ready_buffer):
-            if entry[3] == job_id:
-                self._ready_buffer.pop(idx)
-                return True
         return False
 
     def __len__(self) -> int:
-        return len(self._entries) + len(self._ready_buffer)
+        return len(self._entries)
