@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
-from app.database import Base
+from app.models.base import Base
 
 
 class JobStatus(enum.StrEnum):
@@ -50,6 +50,3 @@ class Job(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     error_message: Mapped[str | None] = mapped_column(Text)
-
-    # Relationships are defined via back_populates in other models.
-    # dependency tracking and DLQ tracking
