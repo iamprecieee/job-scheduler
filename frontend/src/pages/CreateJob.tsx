@@ -40,7 +40,7 @@ const CreateJob: React.FC = () => {
       try {
         parsedPayload = JSON.parse(formData.payload);
       } catch (err) {
-        throw new Error('Invalid JSON payload');
+        throw new Error('Invalid JSON payload', { cause: err });
       }
 
       const request: CreateJobRequest = {
@@ -63,8 +63,12 @@ const CreateJob: React.FC = () => {
 
       await apiClient.post('/jobs', request);
       navigate('/jobs');
-    } catch (err: any) {
-      setError(err.message || 'Failed to create job');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to create job');
+      }
     } finally {
       setLoading(false);
     }

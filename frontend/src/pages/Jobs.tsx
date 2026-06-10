@@ -39,9 +39,11 @@ const Jobs: React.FC = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
     const interval = setInterval(fetchJobs, 10000); // Poll every 10s
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter]);
 
   const handleRefresh = () => {

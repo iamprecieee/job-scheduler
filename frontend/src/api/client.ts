@@ -47,14 +47,14 @@ export const apiClient = {
   get: <T>(endpoint: string, options?: RequestInit) => 
     fetchWrapper<T>(endpoint, { ...options, method: 'GET' }),
     
-  post: <T>(endpoint: string, body?: any, options?: RequestInit) => 
+  post: <T>(endpoint: string, body?: unknown, options?: RequestInit) => 
     fetchWrapper<T>(endpoint, { 
       ...options, 
       method: 'POST', 
       body: body ? JSON.stringify(body) : undefined 
     }),
     
-  put: <T>(endpoint: string, body?: any, options?: RequestInit) => 
+  put: <T>(endpoint: string, body?: unknown, options?: RequestInit) => 
     fetchWrapper<T>(endpoint, { 
       ...options, 
       method: 'PUT', 
@@ -71,8 +71,8 @@ export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'can
 export interface Job {
   id: string;
   type: string;
-  payload: Record<string, any>;
-  result?: Record<string, any>;
+  payload: Record<string, unknown>;
+  result?: Record<string, unknown>;
   priority: number;
   status: JobStatus;
   retry_count: number;
@@ -104,9 +104,24 @@ export interface DLQListResponse {
 
 export interface CreateJobRequest {
   type: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   priority?: number;
   scheduled_at?: string;
   recurring_interval?: string;
   dependencies?: string[];
 }
+
+export interface SentEmail {
+  id: string;
+  job_id: string;
+  recipient: string;
+  subject: string;
+  body: string;
+  sent_at: string;
+}
+
+export interface SentEmailListResponse {
+  emails: SentEmail[];
+  total: number;
+}
+

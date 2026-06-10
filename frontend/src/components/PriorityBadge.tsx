@@ -5,7 +5,7 @@ interface PriorityBadgeProps {
 }
 
 const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority }) => {
-  let label = 'Low';
+  let label: string;
   let colorClass = 'badge-cancelled'; // Neutral look
 
   if (priority === 1) {
