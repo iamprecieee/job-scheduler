@@ -1,6 +1,6 @@
 import time
+
 import pytest
-from typing import Type
 
 from app.scheduler import HeapQueue, IndexedPriorityQueue, SkipList, TimingWheel
 from app.scheduler.base import SchedulerQueue
@@ -21,14 +21,16 @@ def test_push_and_pop_ordering(queue: SchedulerQueue) -> None:
     queue.push("job-3", priority=3.0, scheduled_at=past_time, created_at=10)
     queue.push("job-1", priority=1.0, scheduled_at=past_time, created_at=20)
     queue.push("job-2", priority=2.0, scheduled_at=past_time, created_at=30)
-    
+
     # Priority tie-breaker
     queue.push("job-1b", priority=1.0, scheduled_at=past_time + 10, created_at=40)
     queue.push("job-1a", priority=1.0, scheduled_at=past_time, created_at=10)
 
     assert len(queue) == 5
 
-    # Should pop: job-1a (p=1, early sched), job-1 (p=1, same sched, later created), job-1b (p=1, later sched), job-2, job-3
+    # Should pop: job-1a (p=1, early sched),
+    # job-1 (p=1, same sched, later created),
+    # job-1b (p=1, later sched), job-2, job-3
     assert queue.pop() == "job-1a"
     assert queue.pop() == "job-1"
     assert queue.pop() == "job-1b"
@@ -51,7 +53,7 @@ def test_time_gating(queue: SchedulerQueue, monkeypatch: pytest.MonkeyPatch) -> 
     # Only past job should be ready
     assert queue.peek() == "job-past"
     assert queue.pop() == "job-past"
-    
+
     # Future job is still in the queue but not ready to be popped
     # Note: peek() returns the top item regardless of scheduled_at
     assert queue.peek() == "job-future" or queue.peek() is None
@@ -96,7 +98,7 @@ def test_duplicate_push(queue: SchedulerQueue) -> None:
     queue.push("job-2", priority=2.0, scheduled_at=past_time, created_at=20)
 
     # Currently job-2 is higher priority (2 < 5)
-    
+
     # Update job-1 to have higher priority than job-2
     queue.push("job-1", priority=1.0, scheduled_at=past_time, created_at=10)
 

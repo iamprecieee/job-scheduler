@@ -22,6 +22,7 @@ serve = "app.main:run"
 
 [dependency-groups]
 dev = [
+    "aiosqlite>=0.22.1",
     "httpx>=0.28.1",
     "mypy>=2.1.0",
     "pytest>=9.0.3",
@@ -43,6 +44,7 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
 
 [tool.uv]

@@ -4,13 +4,15 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    JSON,
     DateTime,
     Float,
     SmallInteger,
     String,
     Text,
+    Uuid,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -28,10 +30,14 @@ class JobStatus(enum.StrEnum):
 class Job(Base):
     __tablename__ = "jobs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid7)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid7)
     type: Mapped[str] = mapped_column(String(100), index=True)
-    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
-    result: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), default=dict
+    )
+    result: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=True
+    )
 
     # Priority: 1 (High), 2 (Medium), 3 (Low)
     priority: Mapped[int] = mapped_column(SmallInteger, index=True)
