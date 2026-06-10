@@ -86,6 +86,7 @@ To test job dependencies where a "Child" job waits for a "Parent" job to finish:
 | **DAG Workflow Engine** | Define jobs with dependencies that must complete before execution. |
 | **Concurrency** | `FOR UPDATE SKIP LOCKED` guarantees zero duplicate processing across multiple concurrent workers. |
 | **Real-Time UI** | Server-Sent Events (SSE) stream live queue lengths and job updates to a glassmorphism dashboard. |
+| **Real-Time Inbox** | Dedicated inbox to view emails processed by `send_email` jobs with global toast notifications. |
 | **Robust Retries & DLQ** | Jobs that fail 3 times are moved to a Dead Letter Queue and alert the `AlertService`. |
 
 ---

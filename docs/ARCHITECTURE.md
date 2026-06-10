@@ -9,7 +9,7 @@ This document details the architectural decisions and internal design of the Bac
 ### 1. The HTTP API (FastAPI)
 The FastAPI application serves REST endpoints for job lifecycle management and a Server-Sent Events (SSE) endpoint for real-time monitoring.
 
-- **Endpoints:** `/jobs` (CRUD), `/dlq` (Dead Letter Queue management), `/sse/queue` (real-time queue length).
+- **Endpoints:** `/jobs` (CRUD), `/dlq` (Dead Letter Queue management), `/inbox` (Processed emails), `/sse/queue` (real-time queue length), `/inbox/stream` (real-time email updates).
 - **Middleware:** `RequestLoggingMiddleware` injects structured request context (`X-Request-ID`) into every log line.
 - **Concurrency:** Uses `asyncio` for non-blocking I/O. Intensive endpoints (like `/benchmark`) run in the `concurrent.futures` threadpool via `asyncio.to_thread()` or synchronous `def` routes to prevent event loop blocking.
 
@@ -51,4 +51,4 @@ All schemas are managed via Alembic migrations.
 ## Frontend
 - **Framework:** React 19 + TypeScript + Vite.
 - **Styling:** Vanilla CSS with custom CSS variables. Deep dark mode, glassmorphism (`backdrop-filter`), and dynamic glows mapped to Job Statuses.
-- **Architecture:** `client.ts` wraps the `fetch` API for typed endpoints. `useSSE.ts` provides a robust, auto-reconnecting `EventSource` wrapper for the Dashboard.
+- **Architecture:** `client.ts` wraps the `fetch` API for typed endpoints. `useSSE.ts` provides a robust, auto-reconnecting `EventSource` wrapper for the Dashboard metrics. A dedicated `useInboxSSE.ts` provides global toast notifications and powers the real-time Inbox page.
