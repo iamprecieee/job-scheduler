@@ -26,36 +26,46 @@ class SkipList:
             lvl += 1
         return lvl
 
+    def _traverse(
+        self, key: tuple[float, float, float] | None
+    ) -> tuple[SkipListNode, list[SkipListNode]]:
+        """Walk the skip list top-down, returning the landing node and an update array.
+
+        Each update[i] holds the last node at level i whose forward pointer
+        should be patched during an insert or delete.
+        """
+        update: list[SkipListNode] = [self.header] * (self.max_level + 1)
+        current: SkipListNode = self.header
+
+        for idx in range(self.level, -1, -1):
+            fwd = current.forward[idx]
+            while fwd is not None and fwd.key is not None and key is not None and fwd.key < key:
+                current = fwd
+                fwd = current.forward[idx]
+            update[idx] = current
+
+        return current, update
+
     def push(self, job_id: str, priority: float, scheduled_at: float, created_at: float) -> None:
         if job_id in self._lookup:
             self.remove(job_id)
 
         key = (priority, scheduled_at, created_at)
-        update: list[SkipListNode | None] = [None] * (self.max_level + 1)
-        current = self.header
+        _, update = self._traverse(key)
 
-        for i in range(self.level, -1, -1):
-            while (
-                current.forward[i]
-                and current.forward[i].key is not None
-                and current.forward[i].key < key
-            ):
-                current = current.forward[i]
-            update[i] = current
-
-        lvl = _random_level = self._random_level()
+        lvl = self._random_level()
 
         if lvl > self.level:
-            for i in range(self.level + 1, lvl + 1):
-                update[i] = self.header
+            for idx in range(self.level + 1, lvl + 1):
+                update[idx] = self.header
             self.level = lvl
 
         new_node = SkipListNode(key, job_id, lvl)
         self._lookup[job_id] = new_node
 
-        for i in range(lvl + 1):
-            new_node.forward[i] = update[i].forward[i]  # type: ignore
-            update[i].forward[i] = new_node  # type: ignore
+        for idx in range(lvl + 1):
+            new_node.forward[idx] = update[idx].forward[idx]
+            update[idx].forward[idx] = new_node
 
         self._size += 1
 
@@ -90,31 +100,22 @@ class SkipList:
         target_node = self._lookup[job_id]
         key = target_node.key
 
-        update: list[SkipListNode | None] = [None] * (self.max_level + 1)
-        current = self.header
+        _, update = self._traverse(key)
 
-        for i in range(self.level, -1, -1):
-            while (
-                current.forward[i]
-                and current.forward[i].key is not None
-                and current.forward[i].key < key
-            ):
-                current = current.forward[i]  # type: ignore
-            update[i] = current
+        node: SkipListNode | None = update[0].forward[0]
 
-        current = current.forward[0]  # type: ignore
+        # Walk forward at level 0 to find the exact node when keys collide.
+        while node is not None and node.key == key and node.job_id != job_id:
+            for idx in range(self.level, -1, -1):
+                if update[idx].forward[idx] is node:
+                    update[idx] = node
+            node = node.forward[0]
 
-        while current and current.key == key and current.job_id != job_id:
-            for i in range(self.level, -1, -1):
-                if update[i].forward[i] == current:
-                    update[i] = current
-            current = current.forward[0]
-
-        if current and current.job_id == job_id:
-            for i in range(self.level + 1):
-                if update[i].forward[i] != current:
+        if node is not None and node.job_id == job_id:
+            for idx in range(self.level + 1):
+                if update[idx].forward[idx] is not node:
                     break
-                update[i].forward[i] = current.forward[i]
+                update[idx].forward[idx] = node.forward[idx]
 
             while self.level > 0 and self.header.forward[self.level] is None:
                 self.level -= 1
