@@ -30,7 +30,7 @@ async def process_job(job_id: uuid.UUID) -> None:
         stmt = (
             select(Job)
             .where(Job.id == job_id)
-            .where(Job.status.in_([JobStatus.PENDING, JobStatus.PROCESSING]))
+            .where(Job.status == JobStatus.PENDING)
             .with_for_update(skip_locked=True)
         )
 

@@ -24,7 +24,14 @@ async def event_generator(request: Request) -> AsyncGenerator[dict[str, str]]:
         await asyncio.sleep(2.0)
 
 
-@router.get("/queue")
+@router.get(
+    "/queue",
+    summary="Real-time Queue Monitoring (SSE)",
+    description=(
+        "Establishes a long-lived Server-Sent Events (SSE) connection that streams "
+        "the current length of the in-memory job queue every 2 seconds. Used by "
+        "the glassmorphism dashboard to show live processing metrics without polling."
+    ),
+)
 async def queue_events(request: Request) -> EventSourceResponse:
-    """Server-Sent Events endpoint for real-time queue monitoring."""
     return EventSourceResponse(event_generator(request))

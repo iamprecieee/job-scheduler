@@ -43,7 +43,29 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         pass
 
 
-app = FastAPI(title=settings.project_name, lifespan=lifespan)
+tags_metadata = [
+    {
+        "name": "Jobs",
+        "description": "Manage background jobs' lifecycle - creation, cancellation, retrieval.",
+    },
+    {
+        "name": "DLQ",
+        "description": "Dead Letter Queue management for jobs with exhaausted retry limits.",
+    },
+    {
+        "name": "Metrics",
+        "description": "Real-time metrics and Server-Sent Events (SSE) for dashboard monitoring.",
+    },
+]
+
+app = FastAPI(
+    title="Job Scheduler API",
+    version="1.0.0",
+    openapi_tags=tags_metadata,
+    docs_url=f"{settings.api_v1_str}/docs",
+    openapi_url=f"{settings.api_v1_str}/openapi.json",
+    redoc_url=f"{settings.api_v1_str}/redoc",
+)
 
 app.add_middleware(
     CORSMiddleware,

@@ -41,6 +41,12 @@ npm run dev
 
 </details>
 
+<details>
+<summary><strong>Production Deployment (AWS EC2)</strong></summary>
+
+For deploying to a production server with Nginx, Systemd, SSL (HTTPS), and automated provisioning scripts, please see the comprehensive [Deployment Guide](DEPLOYMENT_GUIDE.md).
+</details>
+
 ---
 
 ## Usage

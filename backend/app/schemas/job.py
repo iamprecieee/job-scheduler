@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -8,14 +8,25 @@ from app.models.job import JobStatus
 
 
 class CreateJobRequest(BaseModel):
-    type: str = Field(..., max_length=100, description="Job handler type (e.g. 'send_email')")
-    payload: dict[str, Any] = Field(default_factory=dict, description="JSON payload for the job")
-    priority: int = Field(..., ge=1, le=3, description="1 (High), 2 (Medium), 3 (Low)")
+    type: Literal["send_email"] = Field(..., description="Job handler type (e.g. 'send_email')")
+    payload: dict[str, Any] = Field(
+        default_factory=dict,
+        description="JSON payload for the job",
+        json_schema_extra={
+            "example": {
+                "to": "test@example.com",
+                "subject": "Hello Background Worker",
+                "body": "This is a test email sent from the Job Scheduler!",
+            }
+        },
+    )
+    priority: Literal[1, 2, 3] = Field(..., description="1 (High), 2 (Medium), 3 (Low)")
 
-    scheduled_at: datetime | None = Field(None, description="Run at specific future time")
-    recurring_interval: str | None = Field(
+    scheduled_at: datetime | None = Field(
+        None, description="Run at specific future time (ISO format)"
+    )
+    recurring_interval: Literal["every_1_minute", "every_5_minutes", "every_1_hour"] | None = Field(
         None,
-        pattern="^(every_1_minute|every_5_minutes|every_1_hour)$",
         description="Optional recurring schedule",
     )
     dependencies: list[uuid.UUID] = Field(

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, PlusCircle, AlertOctagon, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, ListTodo, PlusCircle, AlertOctagon, Sun, Moon, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const Layout: React.FC = () => {
@@ -55,12 +55,10 @@ const Layout: React.FC = () => {
             border: '2px solid var(--border)',
             boxShadow: '2px 2px 0px var(--border)'
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+            <Clock size={20} color="white" />
           </div>
           <span style={{ fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)' }}>
-            Antigravity
+            Scheduler
           </span>
         </div>
 

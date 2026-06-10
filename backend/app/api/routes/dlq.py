@@ -10,17 +10,36 @@ from app.services.dlq_service import DLQService
 router = APIRouter(prefix="/dlq", tags=["DLQ"])
 
 
-@router.get("", response_model=DLQListResponse)
+@router.get(
+    "",
+    response_model=DLQListResponse,
+    summary="List Dead Letter Queue entries",
+    description=(
+        "Fetch a paginated list of jobs that have exhausted their retry limits and "
+        "were permanently moved to the Dead Letter Queue (DLQ). Includes the specific "
+        "exception stack trace that caused the failure."
+    ),
+)
 async def list_dlq(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
 ) -> DLQListResponse:
-    """List all dead letter queue entries."""
     return await DLQService.list_dlq(db, skip=skip, limit=limit)
 
 
-@router.post("/{entry_id}/replay", response_model=DLQEntryResponse)
+@router.post(
+    "/{entry_id}/replay",
+    response_model=DLQEntryResponse,
+    summary="Replay a failed job",
+    description=(
+        "Manually triggers a replay for a specific failed job in the DLQ. "
+        "This will move the job out of the DLQ, reset its retry counter to 0, "
+        "and set its status back to `PENDING` so the workers can pick it up again."
+    ),
+    responses={
+        404: {"description": "DLQ entry not found."},
+    },
+)
 async def replay_job(entry_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> DLQEntryResponse:
-    """Replay a failed job from the DLQ."""
     return await DLQService.replay_job(db, entry_id)

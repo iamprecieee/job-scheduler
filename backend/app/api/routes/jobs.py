@@ -5,15 +5,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
 from app.handlers import get_handler
+from app.models.job import JobStatus
 from app.schemas.job import CreateJobRequest, JobListResponse, JobResponse
 from app.services.job_service import JobService
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 
-@router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=JobResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new background job",
+    description=(
+        "Submits a new job to the background scheduler. The `type` must be registered "
+        "in the system (e.g., `send_email`). You can provide `dependencies` to create a "
+        "DAG execution workflow, or `scheduled_at` to delay execution."
+    ),
+    responses={
+        201: {"description": "Job created successfully."},
+        422: {"description": "Invalid job type or validation error."},
+    },
+)
 async def create_job(request: CreateJobRequest, db: AsyncSession = Depends(get_db)) -> JobResponse:
-    """Create a new job. Validates job type against the handler registry before persisting."""
     try:
         get_handler(request.type)
     except ValueError as exc:
@@ -23,24 +37,54 @@ async def create_job(request: CreateJobRequest, db: AsyncSession = Depends(get_d
     return await JobService.create_job(db, request)
 
 
-@router.get("", response_model=JobListResponse)
+@router.get(
+    "",
+    response_model=JobListResponse,
+    summary="List and filter jobs",
+    description=(
+        "Retrieve a paginated list of jobs. You can optionally filter the results "
+        "by selecting a specific `status` from dropdown (e.g., `completed`, `pending`, `failed`)."
+    ),
+)
 async def list_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    status_filter: str | None = Query(None, alias="status"),
+    status_filter: JobStatus | None = Query(
+        None, alias="status", description="Filter by job status"
+    ),
     db: AsyncSession = Depends(get_db),
 ) -> JobListResponse:
-    """List all jobs with pagination and optional status filter."""
-    return await JobService.list_jobs(db, skip=skip, limit=limit, status=status_filter)
+    return await JobService.list_jobs(
+        db, skip=skip, limit=limit, status=status_filter.value if status_filter else None
+    )
 
 
-@router.get("/{job_id}", response_model=JobResponse)
+@router.get(
+    "/{job_id}",
+    response_model=JobResponse,
+    summary="Retrieve job details",
+    description="Fetch complete state, payload, and retry history of a specific job by its UUID.",
+    responses={
+        404: {"description": "Job not found."},
+    },
+)
 async def get_job(job_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> JobResponse:
-    """Get a specific job by ID."""
     return await JobService.get_job(db, job_id)
 
 
-@router.post("/{job_id}/cancel", response_model=JobResponse)
+@router.post(
+    "/{job_id}/cancel",
+    response_model=JobResponse,
+    summary="Cancel a pending job",
+    description=(
+        "Soft-cancels a job. If the job is already `processing`, the worker will gracefully "
+        "halt execution if cooperative cancellation is implemented by the handler. If the job "
+        "is already completed or failed, this returns a 400 error."
+    ),
+    responses={
+        400: {"description": "Job cannot be cancelled (already completed/failed)."},
+        404: {"description": "Job not found."},
+    },
+)
 async def cancel_job(job_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> JobResponse:
-    """Cancel a pending job."""
     return await JobService.cancel_job(db, job_id)

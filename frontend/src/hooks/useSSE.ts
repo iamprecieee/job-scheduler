@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const SSE_URL = import.meta.env.VITE_API_BASE_URL 
   ? `${import.meta.env.VITE_API_BASE_URL}/sse/queue`
-  : 'http://localhost:8000/api/v1/sse/queue';
+  : '/api/v1/sse/queue';
 
 export function useSSE() {
   const [queueLength, setQueueLength] = useState<number>(0);

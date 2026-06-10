@@ -1,0 +1,22 @@
+[Unit]
+Description=Job Scheduler FastAPI Backend
+After=network.target postgresql.service
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/var/www/job-scheduler/backend
+
+# Use uv to run the uvicorn server directly from the virtual environment
+Environment="PATH=/var/www/job-scheduler/backend/.venv/bin:/usr/local/bin:/usr/bin"
+Environment="DATABASE_URL=postgresql+asyncpg://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME"
+Environment="ENVIRONMENT=production"
+
+# Start uvicorn with 4 workers. The background scheduler worker runs inside the FastAPI lifespan.
+ExecStart=/var/www/job-scheduler/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --no-access-log --log-config logging.yaml
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
