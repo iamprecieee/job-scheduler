@@ -9,7 +9,7 @@ WorkingDirectory=/var/www/job-scheduler/backend
 
 # Use uv to run the uvicorn server directly from the virtual environment
 Environment="PATH=/var/www/job-scheduler/backend/.venv/bin:/usr/local/bin:/usr/bin"
-Environment="DATABASE_URL=postgresql+asyncpg://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME"
+EnvironmentFile=/var/www/job-scheduler/deploy/.env
 Environment="ENVIRONMENT=production"
 
 # Start uvicorn with 4 workers. The background scheduler worker runs inside the FastAPI lifespan.
