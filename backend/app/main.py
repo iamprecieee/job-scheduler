@@ -26,12 +26,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     yield
 
     worker_task.cancel()
+
     sync_task.cancel()
     aging_task.cancel()
     alert_task.cancel()
 
     try:
-        await asyncio.gather(worker_task, sync_task, aging_task, alert_task, return_exceptions=True)
+        await asyncio.gather(
+            worker_task,
+            sync_task,
+            aging_task,
+            alert_task,
+            return_exceptions=True,
+        )
     except asyncio.CancelledError:
         pass
 

@@ -15,7 +15,7 @@ async def _handle_request_validation(request: Request, exc: RequestValidationErr
         detail = "Validation error"
     else:
         err = errors[0]
-        loc_parts = [str(p) for p in err["loc"] if p != "body"]
+        loc_parts = [str(part) for part in err["loc"] if part != "body"]
         loc = " → ".join(loc_parts)
         msg = err["msg"]
         if msg.startswith("Value error, "):

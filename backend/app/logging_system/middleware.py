@@ -1,3 +1,4 @@
+import json
 import time
 import uuid
 from collections.abc import Callable
@@ -56,8 +57,6 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                         body_bytes += chunk if isinstance(chunk, bytes) else chunk.encode()
 
                     try:
-                        import json
-
                         detail = json.loads(body_bytes).get(
                             "detail", body_bytes.decode(errors="replace")
                         )

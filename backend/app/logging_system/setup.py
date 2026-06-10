@@ -63,7 +63,9 @@ def setup_logging(
 
     # Reset: remove default Loguru handler, install InterceptHandler on stdlib root
     logger.remove()
+
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+
     logging.root.setLevel(log_level)
 
     # Redirect all library loggers to propagate through InterceptHandler

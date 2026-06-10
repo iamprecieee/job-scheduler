@@ -8,7 +8,6 @@ from app.database import async_session_factory
 
 
 async def get_db() -> AsyncGenerator[AsyncSession]:
-    """Dependency for providing a database session."""
     async with async_session_factory() as session:
         yield session
 

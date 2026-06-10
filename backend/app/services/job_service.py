@@ -98,7 +98,7 @@ class JobService:
         total_result = await session.execute(count_stmt)
         total = total_result.scalar() or 0
 
-        return JobListResponse(jobs=[JobResponse.model_validate(j) for j in jobs], total=total)
+        return JobListResponse(jobs=[JobResponse.model_validate(job) for job in jobs], total=total)
 
     @staticmethod
     async def cancel_job(session: AsyncSession, job_id: uuid.UUID) -> JobResponse:
