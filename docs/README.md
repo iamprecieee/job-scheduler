@@ -1,6 +1,5 @@
 # Job Scheduler
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
 [![React](https://img.shields.io/badge/react-19-blue.svg)](https://react.dev/)
 
@@ -113,12 +112,3 @@ The worker checks `job.scheduled_at` and computes the next interval. A new recur
 Yes! The `FOR UPDATE SKIP LOCKED` mechanism ensures multiple backend instances can pull from the same PostgreSQL table safely.
 </details>
 
----
-
-## License
-
-[MIT](LICENSE)
-
----
-
-[Contributing](CONTRIBUTING.md) | [Security](SECURITY.md) | [Code of Conduct](CODE_OF_CONDUCT.md)
