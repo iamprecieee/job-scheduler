@@ -1,4 +1,5 @@
 from app.schemas.dlq import DLQEntryResponse, DLQListResponse
+from app.schemas.email import SentEmailListResponse, SentEmailResponse
 from app.schemas.job import CreateJobRequest, JobListResponse, JobResponse
 
 __all__ = [
@@ -7,4 +8,6 @@ __all__ = [
     "JobListResponse",
     "DLQEntryResponse",
     "DLQListResponse",
+    "SentEmailResponse",
+    "SentEmailListResponse",
 ]

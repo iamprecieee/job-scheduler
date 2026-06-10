@@ -12,6 +12,7 @@ from app.database import async_session_factory
 from app.handlers import get_handler
 from app.models import DeadLetterEntry, Job, JobDependency, JobStatus
 from app.scheduler import HeapQueue, SchedulerQueue, recalculate_effective_priority
+from app.services.email_service import EmailService
 
 job_queue: SchedulerQueue = HeapQueue()
 
@@ -67,6 +68,10 @@ async def process_job(job_id: uuid.UUID) -> None:
             handler = get_handler(job.type)
             result_data = await handler.execute(job.payload)
             job.result = result_data
+
+            # Persist sent email for the Inbox feature
+            if job.type == "send_email":
+                await EmailService.record_email(session, job.id, job.payload)
 
             job.status = JobStatus.COMPLETED
             job.completed_at = datetime.now(UTC)
