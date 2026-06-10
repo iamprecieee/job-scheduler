@@ -18,7 +18,15 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/job-scheduler
-            git pull origin main
+            
+            if [ ! -d .git ]; then
+              git init
+              git remote add origin https://github.com/iamprecieee/job-scheduler.git
+            fi
+            
+            git fetch origin main
+            git reset --hard origin/main
+            
             
             # Backend Update
             cd backend
