@@ -19,20 +19,28 @@ jobs:
           script: |
             cd /var/www/job-scheduler
             git pull origin main
-
+            
+            # Backend Update
             cd backend
             uv sync
             source .venv/bin/activate
+            if [ -f ../deploy/.env ]; then
+              export $(grep -v '^#' ../deploy/.env | xargs)
+              export DATABASE_URL="postgresql+asyncpg://${DB_USER:-jobuser}:${DB_PASSWORD:-jobpassword}@localhost:5432/${DB_NAME:-jobscheduler}"
+            fi
             alembic upgrade head || echo "No migrations or migration failed, skipping..."
             cd ..
-
-            systemctl restart job-scheduler
-
+            
+            # Restart backend service
+            sudo systemctl restart job-scheduler
+            
+            # Frontend Update
             cd frontend
             npm install
             VITE_API_BASE_URL=/api/v1 npm run build
             cd ..
-
-            systemctl reload nginx
-
+            
+            # Restart Nginx
+            sudo systemctl reload nginx
+            
             echo "Deployment completed successfully!"
