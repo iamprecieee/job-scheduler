@@ -1,12 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, PlusCircle, AlertOctagon, Sun, Moon, Clock } from 'lucide-react';
-import { motion } from 'motion/react';
+import { LayoutDashboard, ListTodo, PlusCircle, AlertOctagon, Mail, Sun, Moon, Clock, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useInboxSSE } from '../hooks/useInboxSSE';
+import type { SentEmail } from '../api/client';
 
 const Layout: React.FC = () => {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('theme') || 'dark';
   });
+
+  const [globalUnreadCount, setGlobalUnreadCount] = useState(0);
+  const [toastEmail, setToastEmail] = useState<SentEmail | null>(null);
+  const { onNewEmail } = useInboxSSE();
+
+  useEffect(() => {
+    const unsubscribe = onNewEmail((email) => {
+      // Don't show global notification if they are already looking at the inbox
+      if (window.location.pathname !== '/inbox') {
+        setGlobalUnreadCount((prev) => prev + 1);
+        setToastEmail(email);
+        setTimeout(() => setToastEmail(null), 5000);
+      }
+    });
+    return unsubscribe;
+  }, [onNewEmail]);
+
+  // Clear unread count when navigating to inbox
+  useEffect(() => {
+    if (window.location.pathname === '/inbox') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGlobalUnreadCount(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [window.location.pathname]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -20,6 +47,7 @@ const Layout: React.FC = () => {
     { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/jobs', icon: <ListTodo size={20} />, label: 'Jobs' },
     { to: '/create', icon: <PlusCircle size={20} />, label: 'Create Job' },
+    { to: '/inbox', icon: <Mail size={20} />, label: 'Inbox' },
     { to: '/dlq', icon: <AlertOctagon size={20} />, label: 'DLQ' },
   ];
 
@@ -67,10 +95,13 @@ const Layout: React.FC = () => {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={() => {
+                if (item.label === 'Inbox') setGlobalUnreadCount(0);
+              }}
               style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem',
+                justifyContent: 'space-between',
                 padding: '0.75rem 1rem',
                 border: isActive ? 'var(--border-width) solid var(--border)' : 'var(--border-width) solid transparent',
                 borderRadius: 'var(--border-radius)',
@@ -84,13 +115,27 @@ const Layout: React.FC = () => {
                 textDecoration: 'none',
               })}
             >
-              <div style={{ 
-                color: 'inherit',
-                opacity: 0.8,
-              }}>
-                {item.icon}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ color: 'inherit', opacity: 0.8 }}>
+                  {item.icon}
+                </div>
+                {item.label}
               </div>
-              {item.label}
+              {item.label === 'Inbox' && globalUnreadCount > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  style={{
+                    backgroundColor: 'var(--status-completed)',
+                    color: '#fff',
+                    borderRadius: '999px',
+                    padding: '0.1rem 0.5rem',
+                    fontSize: '0.7rem',
+                  }}
+                >
+                  {globalUnreadCount}
+                </motion.div>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -135,6 +180,48 @@ const Layout: React.FC = () => {
           <Outlet />
         </motion.div>
       </main>
+
+      {/* Global Toast Notification */}
+      <AnimatePresence>
+        {toastEmail && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            style={{
+              position: 'fixed',
+              bottom: '2rem',
+              right: '2rem',
+              zIndex: 1000,
+              backgroundColor: 'var(--color-background)',
+              border: '2px solid var(--status-completed)',
+              borderRadius: 'var(--border-radius)',
+              boxShadow: '4px 4px 0px var(--status-completed)',
+              padding: '1rem',
+              maxWidth: '350px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--status-completed)', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                <Mail size={16} />
+                New Email Sent
+              </div>
+              <button onClick={() => setToastEmail(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{ fontSize: '0.9rem' }}>
+              <strong>To:</strong> {toastEmail.recipient}
+            </div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <strong>Sub:</strong> {toastEmail.subject}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
