@@ -10,16 +10,13 @@ from sqlalchemy import select
 from app.config import settings
 from app.database import async_session_factory
 from app.handlers import get_handler
-from app.models.dependency import JobDependency
-from app.models.dlq import DeadLetterEntry
-from app.models.job import Job, JobStatus
-from app.scheduler.base import SchedulerQueue
-from app.scheduler.heap_queue import HeapQueue
+from app.models import DeadLetterEntry, Job, JobDependency, JobStatus
+from app.scheduler import HeapQueue, SchedulerQueue, recalculate_effective_priority
 
 job_queue: SchedulerQueue = HeapQueue()
 
 
-def get_retry_jitter(attempt: int) -> float:
+def _get_retry_jitter(attempt: int) -> float:
     if attempt == 1:
         return 1.0 + random.uniform(-0.5, 0.5)
     elif attempt == 2:
@@ -36,6 +33,7 @@ async def process_job(job_id: uuid.UUID) -> None:
             .where(Job.status.in_([JobStatus.PENDING, JobStatus.PROCESSING]))
             .with_for_update(skip_locked=True)
         )
+
         result = await session.execute(stmt)
         job = result.scalar_one_or_none()
 
@@ -50,7 +48,7 @@ async def process_job(job_id: uuid.UUID) -> None:
         dep_result = await session.execute(dep_stmt)
         dependencies = dep_result.scalars().all()
 
-        if any(d.status != JobStatus.COMPLETED for d in dependencies):
+        if any(dep.status != JobStatus.COMPLETED for dep in dependencies):
             # Dependency not yet satisfied — re-enqueue with a short backoff.
             delay = 5.0
             scheduled = time.time() + delay
@@ -105,7 +103,6 @@ async def process_job(job_id: uuid.UUID) -> None:
             logger.info("Job {} completed", job.id)
 
         except Exception as exc:
-            # Log with full traceback so post-mortems have context.
             logger.opt(exception=True).error("Job {} failed: {}", job.id, exc)
 
             job.retry_count += 1
@@ -122,11 +119,12 @@ async def process_job(job_id: uuid.UUID) -> None:
                     job.id,
                     settings.max_retries,
                 )
+
             else:
                 job.status = JobStatus.PENDING
                 job.started_at = None
 
-                jitter = get_retry_jitter(job.retry_count)
+                jitter = _get_retry_jitter(job.retry_count)
                 next_run_ts = time.time() + jitter
                 job.scheduled_at = datetime.fromtimestamp(next_run_ts, tz=UTC)
 
@@ -195,7 +193,6 @@ async def db_sync_loop() -> None:
 
 
 async def aging_loop() -> None:
-    from app.scheduler.aging import recalculate_effective_priority
 
     logger.info("Aging loop started")
 
