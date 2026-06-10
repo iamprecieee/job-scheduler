@@ -193,7 +193,6 @@ async def db_sync_loop() -> None:
 
 
 async def aging_loop() -> None:
-
     logger.info("Aging loop started")
 
     while True:

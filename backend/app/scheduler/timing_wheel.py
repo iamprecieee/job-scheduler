@@ -75,7 +75,7 @@ class TimingWheel:
                         del self._entries[job_id]
                         self.push(job_id, entry[0], entry[1], entry[2])
 
-        self._ready_buffer.sort(key=lambda x: (x[0], x[2]), reverse=True)
+        self._ready_buffer.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
 
     def pop(self) -> str | None:
         self._advance_clock()
@@ -101,9 +101,9 @@ class TimingWheel:
             return True
 
         # Check buffer
-        for i, entry in enumerate(self._ready_buffer):
+        for idx, entry in enumerate(self._ready_buffer):
             if entry[3] == job_id:
-                self._ready_buffer.pop(i)
+                self._ready_buffer.pop(idx)
                 return True
         return False
 
