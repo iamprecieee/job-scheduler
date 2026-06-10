@@ -14,7 +14,6 @@ class HeapQueue:
     def __init__(self) -> None:
         self._heap: list[tuple[float, float, float, str]] = []
         self._entry_finder: dict[str, tuple[float, float, float, str]] = {}
-        self._REMOVED = "<removed-task>"
 
     def push(self, job_id: str, priority: float, scheduled_at: float, created_at: float) -> None:
         if job_id in self._entry_finder:
@@ -29,7 +28,8 @@ class HeapQueue:
 
         while self._heap:
             priority, scheduled_at, created_at, job_id = self._heap[0]
-            if job_id == self._REMOVED:
+
+            if job_id not in self._entry_finder:
                 heapq.heappop(self._heap)
                 continue
 
@@ -45,20 +45,14 @@ class HeapQueue:
     def peek(self) -> str | None:
         while self._heap:
             priority, scheduled_at, created_at, job_id = self._heap[0]
-            if job_id == self._REMOVED:
+            if job_id not in self._entry_finder:
                 heapq.heappop(self._heap)
                 continue
             return job_id
         return None
 
     def remove(self, job_id: str) -> bool:
-        entry = self._entry_finder.pop(job_id, None)
-        if entry is not None:
-            idx = self._heap.index(entry) if entry in self._heap else -1
-            if idx != -1:
-                self._heap[idx] = (entry[0], entry[1], entry[2], self._REMOVED)
-            return True
-        return False
+        return self._entry_finder.pop(job_id, None) is not None
 
     def __len__(self) -> int:
         return len(self._entry_finder)
