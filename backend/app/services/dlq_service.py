@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.dlq import DeadLetterEntry
 from app.models.job import JobStatus
-from app.scheduler.worker import job_queue
+from app.scheduler import job_queue
 from app.schemas.dlq import DLQEntryResponse, DLQListResponse
 
 

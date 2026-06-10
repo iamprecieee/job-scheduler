@@ -5,7 +5,8 @@ from fastapi import APIRouter, Request
 from loguru import logger
 from sse_starlette.sse import EventSourceResponse
 
-from app.scheduler.worker import job_queue
+from app.api.rate_limiter import limiter
+from app.scheduler import job_queue
 
 router = APIRouter(prefix="/sse", tags=["Events"])
 
@@ -33,5 +34,6 @@ async def event_generator(request: Request) -> AsyncGenerator[dict[str, str]]:
         "the glassmorphism dashboard to show live processing metrics without polling."
     ),
 )
+@limiter.limit("10/minute")
 async def queue_events(request: Request) -> EventSourceResponse:
     return EventSourceResponse(event_generator(request))

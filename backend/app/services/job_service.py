@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.dependency import JobDependency
 from app.models.job import Job, JobStatus
+from app.scheduler import job_queue
 from app.scheduler.dag import detect_cycle
-from app.scheduler.worker import job_queue
 from app.schemas.job import CreateJobRequest, JobListResponse, JobResponse
 
 

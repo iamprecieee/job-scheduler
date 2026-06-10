@@ -11,10 +11,8 @@ from app.config import settings
 from app.database import async_session_factory
 from app.handlers import get_handler
 from app.models import DeadLetterEntry, Job, JobDependency, JobStatus
-from app.scheduler import HeapQueue, SchedulerQueue, recalculate_effective_priority
+from app.scheduler import job_queue, recalculate_effective_priority
 from app.services.email_service import EmailService
-
-job_queue: SchedulerQueue = HeapQueue()
 
 
 def _get_retry_jitter(attempt: int) -> float:
@@ -51,10 +49,10 @@ async def process_job(job_id: uuid.UUID) -> None:
 
         if any(dep.status != JobStatus.COMPLETED for dep in dependencies):
             # Dependency not yet satisfied — re-enqueue with a short backoff.
-            delay = 5.0
-            scheduled = time.time() + delay
+            await session.commit()
+
             job_queue.push(
-                str(job.id), job.effective_priority, scheduled, job.created_at.timestamp()
+                str(job.id), job.effective_priority, time.time() + 5.0, job.created_at.timestamp()
             )
             return
 

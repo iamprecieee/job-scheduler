@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
+from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.schemas.response import ErrorResponse
@@ -62,7 +63,17 @@ async def _handle_unhandled(request: Request, exc: Exception) -> JSONResponse:
     )
 
 
+async def _handle_rate_limit(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    detail = f"Rate limit exceeded: {exc.detail}"
+    logger.warning("Rate limit exceeded on {} {}: {}", request.method, request.url.path, detail)
+    return JSONResponse(
+        status_code=429,
+        content=ErrorResponse(detail=detail).model_dump(),
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(RateLimitExceeded, _handle_rate_limit)  # type: ignore[arg-type]
     app.add_exception_handler(RequestValidationError, _handle_request_validation)  # type: ignore[arg-type]
     app.add_exception_handler(StarletteHTTPException, _handle_http_exception)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, _handle_unhandled)

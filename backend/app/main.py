@@ -4,14 +4,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.exception_handlers import register_exception_handlers
+from app.api.rate_limiter import limiter
 from app.api.routes import api_router
 from app.config import settings
+from app.logging_system import setup_logging
 from app.logging_system.middleware import RequestLoggingMiddleware
-from app.logging_system.setup import setup_logging
-from app.scheduler.worker import aging_loop, db_sync_loop, worker_loop
-from app.services.alert_service import alert_loop
+from app.scheduler import aging_loop, db_sync_loop, worker_loop
+from app.services import alert_loop
 
 
 @asynccontextmanager
@@ -80,6 +82,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(api_router, prefix=settings.api_v1_str)

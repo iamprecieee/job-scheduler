@@ -9,32 +9,42 @@ from app.scheduler.worker import process_job
 
 
 @pytest.fixture
-def mock_handler_success(monkeypatch):
+def mock_handler_success(monkeypatch: pytest.MonkeyPatch) -> None:
     class MockHandler:
-        async def execute(self, payload):
+        async def execute(self, payload: dict) -> dict:
             return {"status": "success"}
 
     monkeypatch.setattr("app.scheduler.worker.get_handler", lambda type: MockHandler())
 
 
 @pytest.fixture
-def mock_handler_failure(monkeypatch):
+def mock_handler_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     class MockHandler:
-        async def execute(self, payload):
+        async def execute(self, payload: dict) -> dict:
             raise ValueError("Intentional failure")
 
     monkeypatch.setattr("app.scheduler.worker.get_handler", lambda type: MockHandler())
 
 
 @pytest.mark.asyncio
-async def test_dag_dependencies(db_session: AsyncSession, mock_handler_success) -> None:
+async def test_dag_dependencies(db_session: AsyncSession, mock_handler_success: None) -> None:
     # Create parent job
-    parent_job = Job(type="send_email", priority=1, effective_priority=1.0)
+    parent_job = Job(
+        type="send_email",
+        payload={"to": "test@example.com", "subject": "a", "body": "b"},
+        priority=1,
+        effective_priority=1.0,
+    )
     db_session.add(parent_job)
     await db_session.flush()
 
     # Create child job
-    child_job = Job(type="send_email", priority=1, effective_priority=1.0)
+    child_job = Job(
+        type="send_email",
+        payload={"to": "test@example.com", "subject": "a", "body": "b"},
+        priority=1,
+        effective_priority=1.0,
+    )
     db_session.add(child_job)
     await db_session.flush()
 
@@ -49,6 +59,7 @@ async def test_dag_dependencies(db_session: AsyncSession, mock_handler_success) 
     # Refresh child status
     async with async_session_factory() as session:
         child = await session.get(Job, child_job.id)
+        assert child is not None
         assert child.status == JobStatus.PENDING
 
     # Process parent - should complete
@@ -56,6 +67,7 @@ async def test_dag_dependencies(db_session: AsyncSession, mock_handler_success) 
 
     async with async_session_factory() as session:
         parent = await session.get(Job, parent_job.id)
+        assert parent is not None
         assert parent.status == JobStatus.COMPLETED
 
     # Process child again - should complete now
@@ -63,12 +75,18 @@ async def test_dag_dependencies(db_session: AsyncSession, mock_handler_success) 
 
     async with async_session_factory() as session:
         child = await session.get(Job, child_job.id)
+        assert child is not None
         assert child.status == JobStatus.COMPLETED
 
 
 @pytest.mark.asyncio
-async def test_retry_logic(db_session: AsyncSession, mock_handler_failure) -> None:
-    job = Job(type="send_email", priority=1, effective_priority=1.0)
+async def test_retry_logic(db_session: AsyncSession, mock_handler_failure: None) -> None:
+    job = Job(
+        type="send_email",
+        payload={"to": "test@example.com", "subject": "a", "body": "b"},
+        priority=1,
+        effective_priority=1.0,
+    )
     db_session.add(job)
     await db_session.commit()
 
@@ -77,14 +95,21 @@ async def test_retry_logic(db_session: AsyncSession, mock_handler_failure) -> No
 
     async with async_session_factory() as session:
         job_updated = await session.get(Job, job.id)
+        assert job_updated is not None
         assert job_updated.status == JobStatus.PENDING
         assert job_updated.retry_count == 1
+        assert job_updated.error_message is not None
         assert "Intentional failure" in job_updated.error_message
 
 
 @pytest.mark.asyncio
-async def test_dlq_logic(db_session: AsyncSession, mock_handler_failure) -> None:
-    job = Job(type="send_email", priority=1, effective_priority=1.0)
+async def test_dlq_logic(db_session: AsyncSession, mock_handler_failure: None) -> None:
+    job = Job(
+        type="send_email",
+        payload={"to": "test@example.com", "subject": "a", "body": "b"},
+        priority=1,
+        effective_priority=1.0,
+    )
     db_session.add(job)
     await db_session.commit()
 
@@ -95,6 +120,7 @@ async def test_dlq_logic(db_session: AsyncSession, mock_handler_failure) -> None
 
     async with async_session_factory() as session:
         job_updated = await session.get(Job, job.id)
+        assert job_updated is not None
 
         # After exceeding max_retries, it should be FAILED
         assert job_updated.status == JobStatus.FAILED
@@ -106,4 +132,5 @@ async def test_dlq_logic(db_session: AsyncSession, mock_handler_failure) -> None
         dlq_entry = result.scalar_one_or_none()
 
         assert dlq_entry is not None
+        assert dlq_entry.failure_reason is not None
         assert "Intentional failure" in dlq_entry.failure_reason

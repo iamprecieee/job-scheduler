@@ -2,6 +2,7 @@ import asyncio
 import json
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from loguru import logger
 from sqlalchemy import desc, func, select
@@ -51,7 +52,7 @@ class EmailService:
     async def record_email(
         session: AsyncSession,
         job_id: uuid.UUID,
-        payload: dict,
+        payload: dict[str, Any],
     ) -> SentEmail:
         """Persist a successfully sent email and broadcast to SSE listeners."""
         email = SentEmail(

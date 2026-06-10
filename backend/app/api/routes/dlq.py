@@ -1,11 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
+from app.api.rate_limiter import limiter
 from app.schemas.dlq import DLQEntryResponse, DLQListResponse
-from app.services.dlq_service import DLQService
+from app.services import DLQService
 
 router = APIRouter(prefix="/dlq", tags=["DLQ"])
 
@@ -20,7 +21,9 @@ router = APIRouter(prefix="/dlq", tags=["DLQ"])
         "exception stack trace that caused the failure."
     ),
 )
+@limiter.limit("120/minute")
 async def list_dlq(
+    request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
@@ -41,5 +44,8 @@ async def list_dlq(
         404: {"description": "DLQ entry not found."},
     },
 )
-async def replay_job(entry_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> DLQEntryResponse:
+@limiter.limit("60/minute")
+async def replay_job(
+    request: Request, entry_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+) -> DLQEntryResponse:
     return await DLQService.replay_job(db, entry_id)

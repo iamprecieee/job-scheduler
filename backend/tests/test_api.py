@@ -90,4 +90,5 @@ async def test_cancel_job(async_client: AsyncClient, db_session: AsyncSession) -
     # DB verification
     await db_session.rollback()  # Refresh transaction state
     job = await db_session.get(Job, uuid.UUID(job_id))
+    assert job is not None
     assert job.status == JobStatus.CANCELLED

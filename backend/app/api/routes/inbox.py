@@ -5,8 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from app.api.dependencies import get_db
+from app.api.rate_limiter import limiter
 from app.schemas.email import SentEmailListResponse
-from app.services.email_service import EmailService, subscribe_inbox, unsubscribe_inbox
+from app.services import EmailService, subscribe_inbox, unsubscribe_inbox
 
 router = APIRouter(prefix="/inbox", tags=["Inbox"])
 
@@ -21,7 +22,9 @@ router = APIRouter(prefix="/inbox", tags=["Inbox"])
         "the scheduler's outbound email history."
     ),
 )
+@limiter.limit("120/minute")
 async def list_emails(
+    request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
@@ -38,6 +41,7 @@ async def list_emails(
         "`new EventSource('/api/v1/inbox/stream')` to receive live inbox updates."
     ),
 )
+@limiter.limit("10/minute")
 async def inbox_stream(request: Request):
     queue = subscribe_inbox()
 

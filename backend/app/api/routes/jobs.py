@@ -1,13 +1,14 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
+from app.api.rate_limiter import limiter
 from app.handlers import get_handler
-from app.models.job import JobStatus
+from app.models import JobStatus
 from app.schemas.job import CreateJobRequest, JobListResponse, JobResponse
-from app.services.job_service import JobService
+from app.services import JobService
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -27,14 +28,17 @@ router = APIRouter(prefix="/jobs", tags=["Jobs"])
         422: {"description": "Invalid job type or validation error."},
     },
 )
-async def create_job(request: CreateJobRequest, db: AsyncSession = Depends(get_db)) -> JobResponse:
+@limiter.limit("30/minute")
+async def create_job(
+    request: Request, job_request: CreateJobRequest, db: AsyncSession = Depends(get_db)
+) -> JobResponse:
     try:
-        get_handler(request.type)
+        get_handler(job_request.type)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from exc
-    return await JobService.create_job(db, request)
+    return await JobService.create_job(db, job_request)
 
 
 @router.get(
@@ -46,7 +50,9 @@ async def create_job(request: CreateJobRequest, db: AsyncSession = Depends(get_d
         "by selecting a specific `status` from dropdown (e.g., `completed`, `pending`, `failed`)."
     ),
 )
+@limiter.limit("120/minute")
 async def list_jobs(
+    request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status_filter: JobStatus | None = Query(
@@ -68,7 +74,10 @@ async def list_jobs(
         404: {"description": "Job not found."},
     },
 )
-async def get_job(job_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> JobResponse:
+@limiter.limit("120/minute")
+async def get_job(
+    request: Request, job_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+) -> JobResponse:
     return await JobService.get_job(db, job_id)
 
 
@@ -86,5 +95,8 @@ async def get_job(job_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> JobR
         404: {"description": "Job not found."},
     },
 )
-async def cancel_job(job_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> JobResponse:
+@limiter.limit("60/minute")
+async def cancel_job(
+    request: Request, job_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+) -> JobResponse:
     return await JobService.cancel_job(db, job_id)

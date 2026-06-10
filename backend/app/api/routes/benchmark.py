@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 
 from app.api.dependencies import verify_admin_token
-from app.scheduler.benchmark import run_all_benchmarks
+from app.scheduler import run_all_benchmarks
 
 router = APIRouter(prefix="/benchmark", tags=["Benchmark"])
 
