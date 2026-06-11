@@ -29,7 +29,7 @@ class HeapQueue:
         while self._heap:
             priority, scheduled_at, created_at, job_id = self._heap[0]
 
-            if job_id not in self._entry_finder:
+            if job_id not in self._entry_finder or self._entry_finder[job_id] != self._heap[0]:
                 heapq.heappop(self._heap)
                 continue
 
@@ -45,7 +45,7 @@ class HeapQueue:
     def peek(self) -> str | None:
         while self._heap:
             priority, scheduled_at, created_at, job_id = self._heap[0]
-            if job_id not in self._entry_finder:
+            if job_id not in self._entry_finder or self._entry_finder[job_id] != self._heap[0]:
                 heapq.heappop(self._heap)
                 continue
             return job_id

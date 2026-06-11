@@ -7,10 +7,8 @@ from loguru import logger
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.dependency import JobDependency
 from app.models.job import Job, JobStatus
 from app.scheduler import job_queue
-from app.scheduler.dag import detect_cycle
 from app.schemas.job import CreateJobRequest, JobListResponse, JobResponse
 
 
@@ -32,29 +30,6 @@ class JobService:
         )
         session.add(job)
         await session.flush()
-
-        if request.dependencies:
-            edges_stmt = select(JobDependency.job_id, JobDependency.depends_on_job_id)
-            edges_result = await session.execute(edges_stmt)
-            existing_edges = [(row.job_id, row.depends_on_job_id) for row in edges_result.all()]
-
-            if detect_cycle(job.id, request.dependencies, existing_edges):
-                await session.rollback()
-                raise HTTPException(
-                    status_code=400, detail="Adding these dependencies would create a cycle."
-                )
-
-            dep_check_stmt = select(func.count()).where(Job.id.in_(request.dependencies))
-            dep_count_result = await session.execute(dep_check_stmt)
-            if dep_count_result.scalar() != len(request.dependencies):
-                await session.rollback()
-                raise HTTPException(
-                    status_code=400, detail="One or more dependencies do not exist."
-                )
-
-            for dep_id in request.dependencies:
-                dep_record = JobDependency(job_id=job.id, depends_on_job_id=dep_id)
-                session.add(dep_record)
 
         await session.commit()
         await session.refresh(job)

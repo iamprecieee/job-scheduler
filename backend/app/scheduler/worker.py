@@ -10,7 +10,15 @@ from sqlalchemy import select
 from app.config import settings
 from app.database import async_session_factory
 from app.handlers import get_handler
-from app.models import DeadLetterEntry, Job, JobDependency, JobStatus
+from app.models import (
+    DeadLetterEntry,
+    Job,
+    JobDependency,
+    JobStatus,
+    Workflow,
+    WorkflowNode,
+    WorkflowNodeDependency,
+)
 from app.scheduler import job_queue, recalculate_effective_priority
 from app.services.email_service import EmailService
 
@@ -47,6 +55,20 @@ async def process_job(job_id: uuid.UUID) -> None:
         dep_result = await session.execute(dep_stmt)
         dependencies = dep_result.scalars().all()
 
+        failed_or_cancelled_deps = [dep for dep in dependencies if dep.status in (JobStatus.FAILED, JobStatus.CANCELLED)]
+        if failed_or_cancelled_deps:
+            job.status = JobStatus.CANCELLED
+            job.error_message = f"Cascading cancellation: Dependency {failed_or_cancelled_deps[0].id} was {failed_or_cancelled_deps[0].status.value}."
+            job.completed_at = datetime.now(UTC)
+            await session.commit()
+            logger.warning(
+                "Job {} cancelled because dependency {} is {}", 
+                job.id, 
+                failed_or_cancelled_deps[0].id,
+                failed_or_cancelled_deps[0].status.value
+            )
+            return
+
         if any(dep.status != JobStatus.COMPLETED for dep in dependencies):
             # Dependency not yet satisfied — re-enqueue with a short backoff.
             await session.commit()
@@ -65,6 +87,17 @@ async def process_job(job_id: uuid.UUID) -> None:
         try:
             handler = get_handler(job.type)
             result_data = await handler.execute(job.payload)
+            
+            # Fetch latest status to ensure it wasn't cancelled while processing
+            refresh_stmt = select(Job.status).where(Job.id == job.id)
+            current_status = await session.scalar(refresh_stmt)
+            
+            if current_status == JobStatus.CANCELLED:
+                logger.info("Job {} was cancelled during execution, discarding result", job.id)
+                # Ensure the local object is synced with DB state so we don't overwrite it
+                job.status = JobStatus.CANCELLED
+                return
+
             job.result = result_data
 
             # Persist sent email for the Inbox feature
@@ -74,33 +107,7 @@ async def process_job(job_id: uuid.UUID) -> None:
             job.status = JobStatus.COMPLETED
             job.completed_at = datetime.now(UTC)
 
-            if job.recurring_interval:
-                base_time = job.scheduled_at or datetime.now(UTC)
-                next_run = None
-                if job.recurring_interval == "every_1_minute":
-                    next_run = base_time + timedelta(minutes=1)
-                elif job.recurring_interval == "every_5_minutes":
-                    next_run = base_time + timedelta(minutes=5)
-                elif job.recurring_interval == "every_1_hour":
-                    next_run = base_time + timedelta(hours=1)
-
-                if next_run:
-                    new_job = Job(
-                        type=job.type,
-                        payload=job.payload,
-                        priority=job.priority,
-                        effective_priority=float(job.priority),
-                        scheduled_at=next_run,
-                        recurring_interval=job.recurring_interval,
-                    )
-                    session.add(new_job)
-                    await session.flush()
-                    job_queue.push(
-                        str(new_job.id),
-                        new_job.effective_priority,
-                        next_run.timestamp(),
-                        new_job.created_at.timestamp(),
-                    )
+            # Recurring logic has been moved to workflow_spawner_loop
 
             await session.commit()
             logger.info("Job {} completed", job.id)
@@ -240,4 +247,96 @@ async def aging_loop() -> None:
             break
         except Exception as exc:
             logger.opt(exception=True).error("Aging loop error: {}", exc)
+            await asyncio.sleep(5.0)
+
+
+async def workflow_spawner_loop() -> None:
+    logger.info("Workflow spawner loop started")
+
+    while True:
+        try:
+            async with async_session_factory() as session:
+                now = datetime.now(UTC)
+
+                # Find workflows that are due, safely locking them to prevent duplicate spawns
+                stmt = (
+                    select(Workflow)
+                    .where(Workflow.scheduled_at <= now)
+                    .with_for_update(skip_locked=True)
+                )
+                result = await session.execute(stmt)
+                workflows = result.scalars().all()
+
+                for workflow in workflows:
+                    # 1. Fetch nodes and dependencies
+                    node_stmt = select(WorkflowNode).where(WorkflowNode.workflow_id == workflow.id)
+                    node_res = await session.execute(node_stmt)
+                    nodes = node_res.scalars().all()
+
+                    dep_stmt = select(WorkflowNodeDependency).where(
+                        WorkflowNodeDependency.node_id.in_([n.id for n in nodes])
+                    )
+                    dep_res = await session.execute(dep_stmt)
+                    deps = dep_res.scalars().all()
+
+                    # 2. Clone into actual Jobs
+                    old_id_to_new_job: dict[uuid.UUID, Job] = {}
+
+                    for node in nodes:
+                        new_job = Job(
+                            type=node.type,
+                            payload=node.payload,
+                            priority=node.priority,
+                            effective_priority=float(node.priority),
+                            status=JobStatus.PENDING,
+                            retry_count=0,
+                        )
+                        session.add(new_job)
+                        old_id_to_new_job[node.id] = new_job
+
+                    await session.flush()
+
+                    # 3. Create Job dependencies
+                    for dep in deps:
+                        new_node_job = old_id_to_new_job.get(dep.node_id)
+                        new_dep_job = old_id_to_new_job.get(dep.depends_on_node_id)
+
+                        if new_node_job and new_dep_job:
+                            job_dep = JobDependency(
+                                job_id=new_node_job.id,
+                                depends_on_job_id=new_dep_job.id,
+                            )
+                            session.add(job_dep)
+
+                    # 4. Schedule the new jobs into the heap
+                    for new_job in old_id_to_new_job.values():
+                        job_queue.push(
+                            str(new_job.id),
+                            new_job.effective_priority,
+                            time.time(),
+                            new_job.created_at.timestamp() if new_job.created_at else time.time(),
+                        )
+
+                    # 5. Reschedule or clear workflow
+                    if workflow.recurring_interval:
+                        if workflow.recurring_interval == "every_1_minute":
+                            workflow.scheduled_at = workflow.scheduled_at + timedelta(minutes=1)
+                        elif workflow.recurring_interval == "every_5_minutes":
+                            workflow.scheduled_at = workflow.scheduled_at + timedelta(minutes=5)
+                        elif workflow.recurring_interval == "every_1_hour":
+                            workflow.scheduled_at = workflow.scheduled_at + timedelta(hours=1)
+                    else:
+                        # Ensure it doesn't run again
+                        workflow.scheduled_at = None
+
+                if workflows:
+                    await session.commit()
+                    logger.debug(f"Spawned {len(workflows)} workflows")
+
+            await asyncio.sleep(settings.scheduled_job_check_interval_seconds)
+
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.opt(exception=True).error("Workflow spawner loop error: {}", exc)
             await asyncio.sleep(5.0)
