@@ -49,7 +49,7 @@ sed -e "s/\$DB_USER/${DB_USER:-jobuser}/g" \
 echo "=========================================================="
 echo "System dependencies installed!"
 echo "Next steps:"
-echo "1. Run database migrations: cd /var/www/job-scheduler/backend && DATABASE_URL=\"postgresql+asyncpg://${DB_USER:-jobuser}:${DB_PASSWORD:-jobpassword}@localhost:5432/${DB_NAME:-jobscheduler}\" uv run alembic upgrade head"
+echo "1. Run database migrations: cd /var/www/job-scheduler/backend && DATABASE_URL=\"postgresql+asyncpg://${DB_USER:-jobuser}:${DB_PASSWORD:-jobpassword}@127.0.0.1:5432/${DB_NAME:-jobscheduler}\" uv run alembic upgrade head"
 echo "2. Build frontend: cd /var/www/job-scheduler/frontend && npm install && VITE_API_BASE_URL=/api/v1 npm run build"
 echo "3. Enable services: sudo ln -s /etc/nginx/sites-available/job-scheduler /etc/nginx/sites-enabled/ && sudo systemctl daemon-reload && sudo systemctl enable --now job-scheduler && sudo systemctl reload nginx"
 echo "=========================================================="

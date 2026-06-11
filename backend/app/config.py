@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     admin_token: str = "supersecret-dev-token"
 
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/job_scheduler"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@127.0.0.1:5433/job_scheduler"
 
     # SMTP (aiosmtpd local mock)
     smtp_host: str = "localhost"

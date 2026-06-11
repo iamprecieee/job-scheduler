@@ -34,7 +34,7 @@ jobs:
             source .venv/bin/activate
             if [ -f ../deploy/.env ]; then
               export $(grep -v '^#' ../deploy/.env | xargs)
-              export DATABASE_URL="postgresql+asyncpg://${DB_USER:-jobuser}:${DB_PASSWORD:-jobpassword}@localhost:5432/${DB_NAME:-jobscheduler}"
+              export DATABASE_URL="postgresql+asyncpg://${DB_USER:-jobuser}:${DB_PASSWORD:-jobpassword}@127.0.0.1:5432/${DB_NAME:-jobscheduler}"
               if ! grep -q "^DATABASE_URL=" ../deploy/.env; then
                 echo "DATABASE_URL=$DATABASE_URL" >> ../deploy/.env
               else
