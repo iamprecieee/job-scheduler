@@ -60,7 +60,7 @@ jobs:
             # Inject SSE buffering fix safely without destroying SSL config
             if ! grep -q "proxy_buffering off;" /etc/nginx/sites-available/job-scheduler; then
               sudo sed -i '/proxy_set_header X-Forwarded-Proto/a \
-        # Disable buffering for Server-Sent Events (SSE)\n        proxy_buffering off;\n        proxy_cache off;\n        proxy_set_header Connection "";\n        chunked_transfer_encoding off;\n        proxy_read_timeout 86400;' /etc/nginx/sites-available/job-scheduler
+              # Disable buffering for Server-Sent Events (SSE)\n              proxy_buffering off;\n              proxy_cache off;\n              proxy_set_header Connection "";\n              chunked_transfer_encoding off;\n              proxy_read_timeout 86400;' /etc/nginx/sites-available/job-scheduler
             fi
             
             sudo systemctl reload nginx
