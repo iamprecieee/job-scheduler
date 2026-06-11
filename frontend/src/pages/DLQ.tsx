@@ -25,7 +25,7 @@ const DLQ: React.FC = () => {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDLQ();
-    const interval = setInterval(fetchDLQ, 10000);
+    const interval = setInterval(fetchDLQ, 1500);
     return () => clearInterval(interval);
   }, []);
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, PlusCircle, AlertOctagon, Mail, Sun, Moon, Clock, X } from 'lucide-react';
+import { LayoutDashboard, ListTodo, PlusCircle, AlertOctagon, Mail, Sun, Moon, Clock, X, Network } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useInboxSSE } from '../hooks/useInboxSSE';
 import type { SentEmail } from '../api/client';
@@ -46,7 +46,9 @@ const Layout: React.FC = () => {
   const navItems = [
     { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/jobs', icon: <ListTodo size={20} />, label: 'Jobs' },
-    { to: '/create', icon: <PlusCircle size={20} />, label: 'Create Job' },
+    { to: '/workflows', icon: <Network size={20} />, label: 'Workflows' },
+    { to: '/jobs/new', icon: <PlusCircle size={20} />, label: 'Create Job' },
+    { to: '/workflows/new', icon: <PlusCircle size={20} />, label: 'Create Workflow' },
     { to: '/inbox', icon: <Mail size={20} />, label: 'Inbox' },
     { to: '/dlq', icon: <AlertOctagon size={20} />, label: 'DLQ' },
   ];
@@ -95,6 +97,7 @@ const Layout: React.FC = () => {
             <NavLink
               key={item.to}
               to={item.to}
+              end
               onClick={() => {
                 if (item.label === 'Inbox') setGlobalUnreadCount(0);
               }}

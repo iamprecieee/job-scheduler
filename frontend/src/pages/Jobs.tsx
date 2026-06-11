@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { RefreshCw, Trash2, Eye, X, Filter } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { RefreshCw, Trash2, Eye, X, Filter, PlusCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiClient } from '../api/client';
 import type { Job, JobListResponse } from '../api/client';
@@ -8,6 +8,7 @@ import StatusBadge from '../components/StatusBadge';
 import PriorityBadge from '../components/PriorityBadge';
 
 const Jobs: React.FC = () => {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,7 +42,7 @@ const Jobs: React.FC = () => {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
-    const interval = setInterval(fetchJobs, 10000); // Poll every 10s
+    const interval = setInterval(fetchJobs, 1500); // Poll every 1.5s for near-realtime updates
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter]);
@@ -105,6 +106,13 @@ const Jobs: React.FC = () => {
           >
             <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
             Refresh
+          </button>
+          <button 
+            onClick={() => navigate('/jobs/new')} 
+            className="btn btn-primary"
+          >
+            <PlusCircle size={16} />
+            Generate Job
           </button>
         </div>
       </div>

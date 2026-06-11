@@ -125,3 +125,37 @@ export interface SentEmailListResponse {
   total: number;
 }
 
+export interface WorkflowNodeRequest {
+  client_id: string;
+  type: string;
+  payload: Record<string, unknown>;
+  priority: number;
+  dependencies: string[];
+}
+
+export interface CreateWorkflowRequest {
+  name?: string;
+  scheduled_at?: string;
+  recurring_interval?: string;
+  nodes: WorkflowNodeRequest[];
+}
+
+export interface WorkflowNodeResponse {
+  id: string;
+  client_id: string;
+  type: string;
+  payload: Record<string, unknown>;
+  priority: number;
+  dependencies: string[];
+}
+
+export interface WorkflowResponse {
+  id: string;
+  name: string | null;
+  scheduled_at: string | null;
+  recurring_interval: string | null;
+  created_at: string;
+  updated_at: string;
+  nodes: WorkflowNodeResponse[];
+}
+

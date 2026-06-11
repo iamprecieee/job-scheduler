@@ -42,8 +42,8 @@ const Dashboard: React.FC = () => {
 
     fetchStats();
     
-    // Poll for stats every 5 seconds since we don't have SSE for all statuses yet
-    const interval = setInterval(fetchStats, 5000);
+    // Poll for stats every 1.5 seconds since we don't have SSE for all statuses yet
+    const interval = setInterval(fetchStats, 1500);
     return () => clearInterval(interval);
   }, []);
 
