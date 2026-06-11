@@ -27,8 +27,8 @@ The system implements four distinct algorithms for job queuing. By default, the 
 - **Skip List:** A probabilistic data structure with O(log n) expected time for all operations. Allows O(n) sequential ordered iteration and range queries.
 
 ### 4. DAG Dependency Resolver
-Jobs can define `dependencies` (a list of other Job UUIDs).
-- **Cycle Detection:** A Depth-First Search (DFS) runs at job creation time. If a back-edge is found, the job is rejected (`422 Unprocessable Entity`), preventing deadlocks.
+Jobs can define `dependencies` (a list of other Job UUIDs). We provide an interactive UI for designing workflows visually.
+- **Cycle Detection:** A Depth-First Search (DFS) runs at workflow creation time. If a back-edge is found, the workflow is rejected (`422 Unprocessable Entity`), preventing deadlocks before jobs are even spawned.
 - **Execution Barrier:** The `SKIP LOCKED` query ensures a job is never picked up unless all jobs in its `depends_on_job_id` relation have `status = 'completed'`.
 
 ### 5. Starvation Prevention (Aging)
@@ -51,4 +51,4 @@ All schemas are managed via Alembic migrations.
 ## Frontend
 - **Framework:** React 19 + TypeScript + Vite.
 - **Styling:** Vanilla CSS with custom CSS variables. Deep dark mode, glassmorphism (`backdrop-filter`), and dynamic glows mapped to Job Statuses.
-- **Architecture:** `client.ts` wraps the `fetch` API for typed endpoints. `useSSE.ts` provides a robust, auto-reconnecting `EventSource` wrapper for the Dashboard metrics. A dedicated `useInboxSSE.ts` provides global toast notifications and powers the real-time Inbox page.
+- **Architecture:** `client.ts` wraps the `fetch` API for typed endpoints. The UI implements a robust 1.5-second fast-polling loop for near-real-time status updates across Jobs, DLQ, and Dashboard. `useSSE.ts` provides a robust, auto-reconnecting `EventSource` wrapper for the Dashboard raw queue metrics. A dedicated `useInboxSSE.ts` provides global toast notifications and powers the real-time Inbox page.

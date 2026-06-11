@@ -67,12 +67,12 @@ curl -X POST http://localhost:8000/api/v1/jobs \
 <details>
 <summary><strong>Testing the DAG Workflow</strong></summary>
 
-To test job dependencies where a "Child" job waits for a "Parent" job to finish:
-1. **Create the Parent Job**: Go to the UI and create a `send_email` job. Schedule it 1-2 minutes in the future so you have time.
-2. **Copy the ID**: Copy the UUID of the newly created Parent Job from the dashboard.
-3. **Create the Child Job**: Create another job, and paste the Parent's UUID into the **Dependencies** field. Leave the schedule blank.
-4. **Observe**: The Child Job will immediately go to `pending`, but the workers will refuse to run it, re-enqueuing it with a 5-second backoff.
-5. **Completion**: Once the Parent Job reaches `completed`, the worker will see the dependency is satisfied and automatically begin processing the Child Job!
+You can design full Directed Acyclic Graphs (DAGs) using the built-in UI:
+1. **Navigate to Workflows**: Click "Workflows" in the sidebar, then "Create Workflow".
+2. **Design Steps**: Add multiple steps to your workflow. Set the Job Type and priority for each.
+3. **Map Dependencies**: Use the checkboxes in each step to define which previous steps it depends on. The backend uses DFS cycle detection to ensure no deadlocks occur.
+4. **Schedule**: Optionally set a recurring interval or future start time.
+5. **Observe**: The jobs will instantly map to the database and dashboard, waiting securely until their parent dependencies reach `completed` before they begin processing!
 </details>
 
 ---
@@ -82,9 +82,9 @@ To test job dependencies where a "Child" job waits for a "Parent" job to finish:
 | Feature | Description |
 |---------|-------------|
 | **Multiple Queue Algorithms** | Min-Heap (default), Timing Wheel, Indexed Priority Queue, and Skip List. |
-| **DAG Workflow Engine** | Define jobs with dependencies that must complete before execution. |
+| **DAG Workflow Engine** | Define jobs with dependencies that must complete before execution using the interactive Workflow UI designer. |
 | **Concurrency** | `FOR UPDATE SKIP LOCKED` guarantees zero duplicate processing across multiple concurrent workers. |
-| **Real-Time UI** | Server-Sent Events (SSE) stream live queue lengths and job updates to a glassmorphism dashboard. |
+| **Near Real-Time UI** | 1.5s fast-polling guarantees snappy status updates, while Server-Sent Events (SSE) stream live queue lengths. |
 | **Real-Time Inbox** | Dedicated inbox to view emails processed by `send_email` jobs with global toast notifications. |
 | **Robust Retries & DLQ** | Jobs that fail 3 times are moved to a Dead Letter Queue and alert the `AlertService`. |
 
