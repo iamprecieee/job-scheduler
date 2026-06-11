@@ -8,7 +8,9 @@ from app.models.job import JobStatus
 
 
 class CreateJobRequest(BaseModel):
-    type: Literal["send_email"] = Field(..., description="Job handler type (e.g. 'send_email')")
+    type: Literal["send_email", "generate_report", "upload_file"] = Field(
+        ..., description="Job handler type (e.g. 'send_email')"
+    )
     payload: dict[str, Any] = Field(
         default_factory=dict,
         description="JSON payload for the job",
@@ -28,9 +30,6 @@ class CreateJobRequest(BaseModel):
     recurring_interval: Literal["every_1_minute", "every_5_minutes", "every_1_hour"] | None = Field(
         None,
         description="Optional recurring schedule",
-    )
-    dependencies: list[uuid.UUID] = Field(
-        default_factory=list, description="List of job IDs that must complete first"
     )
 
 

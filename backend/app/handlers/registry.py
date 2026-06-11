@@ -1,12 +1,15 @@
 from typing import Any
 
 from app.handlers.email_handler import EmailHandler
+from app.handlers.mock_handlers import GenerateReportHandler, UploadFileHandler
 
 # Concrete mapping — populated at import time so it is available before any
 # worker coroutine executes. Using a dict keeps lookup O(1) and makes
 # the full set of supported types introspectable at runtime.
 _REGISTRY: dict[str, type] = {
     "send_email": EmailHandler,
+    "generate_report": GenerateReportHandler,
+    "upload_file": UploadFileHandler,
 }
 
 
