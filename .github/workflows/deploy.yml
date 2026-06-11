@@ -57,7 +57,8 @@ jobs:
             VITE_API_BASE_URL=/api/v1 npm run build
             cd ..
             
-            # Restart Nginx
+            # Update and Restart Nginx
+            sudo cp deploy/nginx.conf /etc/nginx/sites-available/job-scheduler
             sudo systemctl reload nginx
             
             echo "Deployment completed successfully!"
