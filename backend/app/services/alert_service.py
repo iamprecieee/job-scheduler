@@ -45,7 +45,8 @@ async def alert_loop() -> None:
                         alert_job = Job(
                             type="send_email",
                             payload=email_payload,
-                            priority=1,  # High priority
+                            priority=1,
+                            effective_priority=1.0,
                             status=JobStatus.PENDING,
                             scheduled_at=now
                         )
