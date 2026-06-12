@@ -1,54 +1,148 @@
 # Architecture Document: Job Scheduler
 
-## Overview
+## Introduction and Goals
 
-This document details the architectural decisions and internal design of the Background Job Scheduler. The system is built with Python 3.14 (FastAPI) for the backend, React 19 (Vite) for the frontend, and PostgreSQL as the primary datastore.
+The Background Job Scheduler is an asynchronous, highly concurrent, and fault-tolerant distributed system designed to execute delayed tasks, recurring schedules, and complex Directed Acyclic Graph (DAG) workflows. 
 
-## Core Components
+**Key Business Goals:**
+- **Zero-Duplicate Guarantees:** Ensure jobs are executed exactly once, even across horizontally scaled worker nodes.
+- **Resilience:** Handle failure gracefully with jittered backoff retries and Dead Letter Queue (DLQ) alerts.
+- **Observability:** Provide near-real-time monitoring dashboards, tracing capabilities, and Server-Sent Events (SSE) subscriptions for real-time state changes.
 
-### 1. The HTTP API (FastAPI)
-The FastAPI application serves REST endpoints for job lifecycle management and a Server-Sent Events (SSE) endpoint for real-time monitoring.
+---
 
-- **Endpoints:** `/jobs` (CRUD), `/dlq` (Dead Letter Queue management), `/inbox` (Processed emails), `/sse/queue` (real-time queue length), `/inbox/stream` (real-time email updates).
-- **Middleware:** `RequestLoggingMiddleware` injects structured request context (`X-Request-ID`) into every log line.
-- **Concurrency:** Uses `asyncio` for non-blocking I/O. Intensive endpoints (like `/benchmark`) run in the `concurrent.futures` threadpool via `asyncio.to_thread()` or synchronous `def` routes to prevent event loop blocking.
+## System Overview
 
-### 2. Job Execution Model
-- **Worker Loop:** A background coroutine (`worker_loop`) polls the database using `SELECT ... FOR UPDATE SKIP LOCKED`. This guarantees zero duplicate processing across multiple concurrent workers.
-- **Handlers:** Job execution logic (e.g., `EmailHandler`) is dispatched to a `ProcessPoolExecutor` or `ThreadPoolExecutor` depending on whether it's CPU-bound or I/O-bound. This ensures the main `asyncio` event loop remains perfectly responsive.
-- **Cancellation:** Cooperative cancellation is used. If a job is cancelled while `processing`, the worker checks the cancellation flag in the database before committing the final `completed` status. We avoid SIGKILL on workers to prevent corrupted external state (e.g., partially sent emails).
+### High-Level Architecture
+The diagram below illustrates the macro-level architecture of the system, showing how the frontend, backend, background workers, and external services interact.
 
-### 3. Scheduling Algorithms
-The system implements four distinct algorithms for job queuing. By default, the Min-Heap is used, but all conform to the `SchedulerQueue` protocol.
+```mermaid
+graph TD
+    Client(("Web Browser"))
+    
+    subgraph "Job Scheduler System"
+        UI["Frontend SPA<br/>(React/Vite)"]
+        API["FastAPI Backend<br/>(REST & SSE)"]
+        Worker["Async Background Workers<br/>(Polling Loop)"]
+        DB[("PostgreSQL Database<br/>(State & Locks)")]
+        SMTP{{"SMTP Server<br/>(Email Dispatch)"}}
+        
+        Client -- "Interacts" --> UI
+        UI -- "HTTP API Calls" --> API
+        UI -- "Subscribes" --> API
+        API -- "Submits Jobs" --> Worker
+        API -- "Reads/Writes" --> DB
+        Worker -- "SELECT ... FOR UPDATE SKIP LOCKED" --> DB
+        Worker -- "Dispatches Alerts" --> SMTP
+    end
+```
 
-- **Min-Heap (Default):** Python's `heapq`. Provides O(log n) insertions and extractions. Best general-purpose balance of speed and memory footprint.
-- **Timing Wheel:** A hierarchical 2-level wheel (fine + coarse buckets). Provides O(1) amortized insertions and extractions. Fixed memory footprint.
-- **Indexed Priority Queue:** Augments the binary heap with an inverse index array (`qp[]`). Allows O(log n) `decrease-key` operations for highly efficient priority adjustments (used in starvation prevention).
-- **Skip List:** A probabilistic data structure with O(log n) expected time for all operations. Allows O(n) sequential ordered iteration and range queries.
+### Core Components
 
-### 4. DAG Dependency Resolver
-Jobs can define `dependencies` (a list of other Job UUIDs). We provide an interactive UI for designing workflows visually.
-- **Cycle Detection:** A Depth-First Search (DFS) runs at workflow creation time. If a back-edge is found, the workflow is rejected (`422 Unprocessable Entity`), preventing deadlocks before jobs are even spawned.
-- **Execution Barrier:** The `SKIP LOCKED` query ensures a job is never picked up unless all jobs in its `depends_on_job_id` relation have `status = 'completed'`.
+1. **The HTTP API (FastAPI)**
+   The API layer serves purely as the gateway for monitoring and managing the underlying data.
+   - **Endpoints:** `/jobs` (CRUD), `/dlq` (Dead Letter Queue), `/inbox` (Processed emails).
+   - **Streams:** `/sse/queue` (queue length), `/inbox/stream` (real-time email updates).
 
-### 5. Starvation Prevention (Aging)
-A background loop (`aging_loop`) runs every 60 seconds. It decreases the `effective_priority` of pending jobs linearly based on their age:
-`effective_priority = base_priority - (age_in_seconds / 300) * 1.0`
-A Low priority job becomes effectively Medium after 5 minutes, and High after 10 minutes, ensuring all jobs eventually execute.
+2. **Job Execution Model**
+   - **Worker Loop:** Background coroutines (`worker_loop`) poll the database using `SELECT ... FOR UPDATE SKIP LOCKED`.
+   - **Handlers:** Job execution logic is dispatched to a `ProcessPoolExecutor` or `ThreadPoolExecutor` depending on whether it's CPU-bound or I/O-bound to keep the `asyncio` event loop highly responsive.
 
-### 6. Retry & Dead Letter Queue (DLQ)
-Jobs that raise exceptions are retried up to 3 times.
-- **Jitter Backoff:** Retries are delayed exponentially (1s, 5s, 25s) with a randomized jitter (`±20%`) to prevent "thundering herd" database stampedes.
-- **DLQ Threshold Alerts:** When a job fails 3 times, it moves to the DLQ. A background `alert_loop` monitors the DLQ size. If the size exceeds the threshold (10), a real SMTP email is dispatched via the local `aiosmtpd` mock server.
+3. **Scheduling Algorithms**
+   The system implements four distinct algorithms for queueing:
+   - **Min-Heap (Default):** Python's `heapq`. Best general-purpose balance of speed and memory footprint.
+   - **Timing Wheel:** A hierarchical 2-level wheel. Provides `O(1)` amortized insertions. Fixed memory footprint.
+   - **Indexed Priority Queue:** Augments binary heap with an inverse index array. Allows `O(log n)` decrease-key operations for efficient starvation prevention.
+   - **Skip List:** A probabilistic structure with `O(log n)` expected time for operations.
 
-## Database Schema
-- `jobs`: Stores the job state, payload, retry counts, priority, and timestamps.
-- `job_dependencies`: A mapping table for DAG relations.
-- `dead_letter_queue`: Stores failed jobs with full stack traces.
+4. **DAG Dependency Resolver**
+   Jobs can define `dependencies` creating directed acyclic execution graphs.
+   - **Cycle Detection:** A Depth-First Search (DFS) runs at workflow creation time to reject circular graphs.
+   - **Execution Barrier:** The `SKIP LOCKED` query dynamically ensures a job is never picked up unless all parent dependencies have `status = 'completed'`.
 
-All schemas are managed via Alembic migrations.
+---
 
-## Frontend
-- **Framework:** React 19 + TypeScript + Vite.
-- **Styling:** Vanilla CSS with custom CSS variables. Deep dark mode, glassmorphism (`backdrop-filter`), and dynamic glows mapped to Job Statuses.
-- **Architecture:** `client.ts` wraps the `fetch` API for typed endpoints. The UI implements a robust 1.5-second fast-polling loop for near-real-time status updates across Jobs, DLQ, and Dashboard. `useSSE.ts` provides a robust, auto-reconnecting `EventSource` wrapper for the Dashboard raw queue metrics. A dedicated `useInboxSSE.ts` provides global toast notifications and powers the real-time Inbox page.
+## Runtime and Data Flow
+
+### Job Lifecycle Data Flow
+The sequence diagram below illustrates the exact lifecycle of a job, highlighting the non-blocking transaction boundaries and execution loops.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant API as FastAPI Router
+    participant DB as PostgreSQL
+    participant Worker as Async Worker Loop
+    participant Handler as Job Handler (e.g. Email)
+
+    User->>API: POST /api/v1/jobs (type, payload)
+    API->>DB: INSERT INTO jobs (status='pending')
+    DB-->>API: job_id
+    API-->>User: 201 Created (Job UUID)
+
+    loop Every 2.0s
+        Worker->>DB: SELECT ... FOR UPDATE SKIP LOCKED
+        DB-->>Worker: Lock acquired for job_id
+        
+        Worker->>DB: UPDATE status='processing'
+        Worker->>Handler: execute(payload)
+        
+        alt Execution Success
+            Handler-->>Worker: Result
+            Worker->>DB: UPDATE status='completed'
+        else Execution Failed
+            Handler--xWorker: Exception
+            Worker->>DB: UPDATE retry_count, status='pending' (or DLQ)
+        end
+    end
+```
+
+---
+
+## Deployment Architecture
+
+```mermaid
+graph TD
+    subgraph "AWS EC2 Instance (Ubuntu)"
+        Nginx["Nginx Reverse Proxy<br/>(Port 443/80)"]
+        
+        subgraph "Systemd Services"
+            Gunicorn["Uvicorn Workers<br/>(FastAPI)"]
+        end
+        
+        DB[("PostgreSQL 16")]
+        
+        Nginx -- "Proxy Pass (127.0.0.1:8000)" --> Gunicorn
+        Gunicorn -- "asyncpg (TCP 5432)" --> DB
+    end
+
+    Client(("Web Browser")) -- "HTTPS" --> Nginx
+```
+
+---
+
+## Cross-Cutting Concerns
+
+### Observability
+- **Request Logging:** `RequestLoggingMiddleware` injects structured request context (`X-Request-ID`) into every log line.
+- **Tracing:** All background jobs inherit trace IDs to correlate API requests directly with asynchronous background execution logs.
+
+### Resiliency and Fault Tolerance
+- **Exponential Backoff:** Retries are delayed exponentially (1s, 5s, 25s) with a randomized jitter (`±20%`) to prevent "thundering herd" database stampedes.
+- **Dead Letter Queue (DLQ):** Jobs failing beyond their retry limit are parked in the DLQ.
+- **Alerting:** An `alert_loop` monitors DLQ size and dispatches SMTP emails if thresholds are exceeded.
+
+---
+
+## Key Architecture Decisions (ADRs)
+
+### ADR 1: PostgreSQL `SKIP LOCKED` over Redis
+* **Context:** We needed a queue broker to distribute tasks.
+* **Decision:** Instead of introducing a massive external dependency (Redis, RabbitMQ), we utilized PostgreSQL's `SELECT ... FOR UPDATE SKIP LOCKED`.
+* **Consequences:** We achieve ACID transaction guarantees and zero duplicate processing across horizontal deployments while eliminating the network latency and deployment complexity of maintaining a separate Redis cluster. 
+
+### ADR 2: Short-Polling + Server-Sent Events (SSE) over WebSockets
+* **Context:** The frontend dashboard required real-time queue metrics and job status changes.
+* **Decision:** Implemented a hybrid 1.5s sub-polling architecture for complex table views, paired with native Server-Sent Events (SSE) streams for global metrics.
+* **Consequences:** WebSockets require complex state management and dedicated bidirectional framing. SSE operates cleanly over standard HTTP/1.1 (and HTTP/2 multiplexing), automatically reconnects via browser native APIs, and easily bypasses strict corporate firewalls. Short-polling provides near-real-time latency without exhausting open file descriptors on the backend.
