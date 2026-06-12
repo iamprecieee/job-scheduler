@@ -13,7 +13,7 @@ from app.config import settings
 from app.logging_system import setup_logging
 from app.logging_system.middleware import RequestLoggingMiddleware
 from app.scheduler import aging_loop, db_sync_loop, worker_loop, workflow_spawner_loop
-from app.services import alert_loop, pubsub_listener_loop
+from app.services import pubsub_listener_loop
 
 
 @asynccontextmanager
@@ -23,7 +23,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     worker_task = asyncio.create_task(worker_loop())
     sync_task = asyncio.create_task(db_sync_loop())
     aging_task = asyncio.create_task(aging_loop())
-    alert_task = asyncio.create_task(alert_loop())
     workflow_task = asyncio.create_task(workflow_spawner_loop())
     pubsub_task = asyncio.create_task(pubsub_listener_loop())
 
@@ -33,7 +32,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     sync_task.cancel()
     aging_task.cancel()
-    alert_task.cancel()
     workflow_task.cancel()
     pubsub_task.cancel()
 
@@ -42,7 +40,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             worker_task,
             sync_task,
             aging_task,
-            alert_task,
             workflow_task,
             pubsub_task,
             return_exceptions=True,

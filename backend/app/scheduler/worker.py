@@ -20,6 +20,7 @@ from app.models import (
     WorkflowNodeDependency,
 )
 from app.scheduler import job_queue, recalculate_effective_priority
+from app.services import check_and_trigger_alert
 from app.services.email_service import EmailService
 
 
@@ -128,6 +129,10 @@ async def process_job(job_id: uuid.UUID) -> None:
 
                 dlq_entry = DeadLetterEntry(job_id=job.id, failure_reason=str(exc))
                 session.add(dlq_entry)
+
+                # Check DLQ threshold and instantly trigger alert if exceeded
+                await check_and_trigger_alert(session)
+
                 logger.warning(
                     "Job {} exhausted {} retries — moved to DLQ",
                     job.id,
