@@ -89,7 +89,7 @@ class EmailService:
         await session.flush()
 
         response = SentEmailResponse.model_validate(email)
-        payload = json.dumps(
+        notify_payload = json.dumps(
             {
                 "id": str(response.id),
                 "job_id": str(response.job_id),
@@ -99,7 +99,9 @@ class EmailService:
                 "sent_at": response.sent_at.isoformat(),
             }
         )
-        await session.execute(text("SELECT pg_notify('new_email', :payload)"), {"payload": payload})
+        await session.execute(
+            text("SELECT pg_notify('new_email', :payload)"), {"payload": notify_payload}
+        )
 
         logger.info("Recorded sent email for job {} → {}", job_id, payload["to"])
         return email
