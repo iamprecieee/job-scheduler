@@ -13,7 +13,7 @@ from app.config import settings
 from app.logging_system import setup_logging
 from app.logging_system.middleware import RequestLoggingMiddleware
 from app.scheduler import aging_loop, db_sync_loop, worker_loop, workflow_spawner_loop
-from app.services import alert_loop
+from app.services import alert_loop, pubsub_listener_loop
 
 
 @asynccontextmanager
@@ -25,6 +25,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     aging_task = asyncio.create_task(aging_loop())
     alert_task = asyncio.create_task(alert_loop())
     workflow_task = asyncio.create_task(workflow_spawner_loop())
+    pubsub_task = asyncio.create_task(pubsub_listener_loop())
 
     yield
 
@@ -34,6 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     aging_task.cancel()
     alert_task.cancel()
     workflow_task.cancel()
+    pubsub_task.cancel()
 
     try:
         await asyncio.gather(
@@ -42,6 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             aging_task,
             alert_task,
             workflow_task,
+            pubsub_task,
             return_exceptions=True,
         )
     except asyncio.CancelledError:
