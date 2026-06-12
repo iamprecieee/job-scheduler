@@ -55,17 +55,22 @@ async def process_job(job_id: uuid.UUID) -> None:
         dep_result = await session.execute(dep_stmt)
         dependencies = dep_result.scalars().all()
 
-        failed_or_cancelled_deps = [dep for dep in dependencies if dep.status in (JobStatus.FAILED, JobStatus.CANCELLED)]
+        failed_or_cancelled_deps = [
+            dep for dep in dependencies if dep.status in (JobStatus.FAILED, JobStatus.CANCELLED)
+        ]
         if failed_or_cancelled_deps:
             job.status = JobStatus.CANCELLED
-            job.error_message = f"Cascading cancellation: Dependency {failed_or_cancelled_deps[0].id} was {failed_or_cancelled_deps[0].status.value}."
+            job.error_message = (
+                f"Cascading cancellation: Dependency {failed_or_cancelled_deps[0].id} "
+                f"was {failed_or_cancelled_deps[0].status.value}."
+            )
             job.completed_at = datetime.now(UTC)
             await session.commit()
             logger.warning(
-                "Job {} cancelled because dependency {} is {}", 
-                job.id, 
+                "Job {} cancelled because dependency {} is {}",
+                job.id,
                 failed_or_cancelled_deps[0].id,
-                failed_or_cancelled_deps[0].status.value
+                failed_or_cancelled_deps[0].status.value,
             )
             return
 
@@ -87,11 +92,11 @@ async def process_job(job_id: uuid.UUID) -> None:
         try:
             handler = get_handler(job.type)
             result_data = await handler.execute(job.payload)
-            
+
             # Fetch latest status to ensure it wasn't cancelled while processing
             refresh_stmt = select(Job.status).where(Job.id == job.id)
             current_status = await session.scalar(refresh_stmt)
-            
+
             if current_status == JobStatus.CANCELLED:
                 logger.info("Job {} was cancelled during execution, discarding result", job.id)
                 # Ensure the local object is synced with DB state so we don't overwrite it

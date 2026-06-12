@@ -4,10 +4,12 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+import asyncpg
 from loguru import logger
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models import SentEmail
 from app.schemas import SentEmailListResponse, SentEmailResponse
 
@@ -29,22 +31,43 @@ def unsubscribe_inbox(queue: asyncio.Queue[str]) -> None:
         pass
 
 
-async def broadcast_new_email(email: SentEmailResponse) -> None:
-    payload = json.dumps(
-        {
-            "id": str(email.id),
-            "job_id": str(email.job_id),
-            "recipient": email.recipient,
-            "subject": email.subject,
-            "body": email.body,
-            "sent_at": email.sent_at.isoformat(),
-        }
-    )
+def _broadcast_new_email_local(payload: str) -> None:
     for queue in list(_inbox_subscribers):
         try:
             queue.put_nowait(payload)
         except asyncio.QueueFull:
             pass
+
+
+async def pubsub_listener_loop() -> None:
+    """Continuously listens for Postgres 'new_email' notifications."""
+    db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+
+    async def handle_notification(
+        connection: asyncpg.Connection, pid: int, channel: str, payload: str
+    ) -> None:
+        _broadcast_new_email_local(payload)
+
+    while True:
+        conn: asyncpg.Connection | None = None
+        try:
+            conn = await asyncpg.connect(db_url)
+            assert conn is not None
+            await conn.add_listener("new_email", handle_notification)
+            logger.info("Connected to Postgres Pub/Sub channel 'new_email'")
+
+            while not conn.is_closed():
+                await asyncio.sleep(5.0)
+
+        except asyncio.CancelledError:
+            if conn is not None and not conn.is_closed():
+                await conn.remove_listener("new_email", handle_notification)
+                await conn.close()
+            logger.info("PubSub listener loop cancelled")
+            break
+        except Exception as exc:
+            logger.error("PubSub listener error: {}", exc)
+            await asyncio.sleep(5.0)
 
 
 class EmailService:
@@ -66,7 +89,17 @@ class EmailService:
         await session.flush()
 
         response = SentEmailResponse.model_validate(email)
-        await broadcast_new_email(response)
+        payload = json.dumps(
+            {
+                "id": str(response.id),
+                "job_id": str(response.job_id),
+                "recipient": response.recipient,
+                "subject": response.subject,
+                "body": response.body,
+                "sent_at": response.sent_at.isoformat(),
+            }
+        )
+        await session.execute(text("SELECT pg_notify('new_email', :payload)"), {"payload": payload})
 
         logger.info("Recorded sent email for job {} → {}", job_id, payload["to"])
         return email

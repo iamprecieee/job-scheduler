@@ -1,6 +1,11 @@
 from app.services.alert_service import alert_loop
 from app.services.dlq_service import DLQService
-from app.services.email_service import EmailService, subscribe_inbox, unsubscribe_inbox
+from app.services.email_service import (
+    EmailService,
+    pubsub_listener_loop,
+    subscribe_inbox,
+    unsubscribe_inbox,
+)
 from app.services.job_service import JobService
 
 __all__ = [
@@ -10,4 +15,5 @@ __all__ = [
     "alert_loop",
     "subscribe_inbox",
     "unsubscribe_inbox",
+    "pubsub_listener_loop",
 ]
