@@ -18,16 +18,16 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/job-scheduler
-            
+
             if [ ! -d .git ]; then
               git init
               git remote add origin https://github.com/iamprecieee/job-scheduler.git
             fi
-            
+
             git fetch origin main
             git reset --hard origin/main
-            
-            
+
+
             # Backend Update
             cd backend
             uv sync
@@ -43,26 +43,30 @@ jobs:
             fi
             alembic upgrade head || echo "No migrations or migration failed, skipping..."
             cd ..
-            
+
+            # Inject SSE buffering fix safely without destroying SSL config
+            if ! grep -q "proxy_buffering off;" /etc/nginx/sites-available/job-scheduler; then
+              sudo sed -i '/proxy_set_header X-Forwarded-Proto/a \
+              # Disable buffering for Server-Sent Events (SSE)\n              proxy_buffering off;\n              proxy_cache off;\n              proxy_read_timeout 86400;' /etc/nginx/sites-available/job-scheduler
+            fi
+
             # Update backend service config
             sudo cp deploy/job-scheduler.service /etc/systemd/system/job-scheduler.service
             sudo systemctl daemon-reload
-            
+
             # Restart backend service
             sudo systemctl restart job-scheduler
-            
+
             # Frontend Update
             cd frontend
             npm install
             VITE_API_BASE_URL=/api/v1 npm run build
             cd ..
-            
-            # Inject SSE buffering fix safely without destroying SSL config
-            if ! grep -q "proxy_buffering off;" /etc/nginx/sites-available/job-scheduler; then
-              sudo sed -i '/proxy_set_header X-Forwarded-Proto/a \
-              # Disable buffering for Server-Sent Events (SSE)\n              proxy_buffering off;\n              proxy_cache off;\n              proxy_set_header Connection "";\n              chunked_transfer_encoding off;\n              proxy_read_timeout 86400;' /etc/nginx/sites-available/job-scheduler
-            fi
-            
+
+            # Remove bad Nginx directives that break HTTP Keep-Alive
+            sudo sed -i '/chunked_transfer_encoding off;/d' /etc/nginx/sites-available/job-scheduler
+            sudo sed -i '/proxy_set_header Connection "";/d' /etc/nginx/sites-available/job-scheduler
+
             sudo systemctl reload nginx
-            
+
             echo "Deployment completed successfully!"
