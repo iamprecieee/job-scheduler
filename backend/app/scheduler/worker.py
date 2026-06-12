@@ -120,10 +120,9 @@ async def process_job(job_id: uuid.UUID) -> None:
         except Exception as exc:
             logger.opt(exception=True).error("Job {} failed: {}", job.id, exc)
 
-            job.retry_count += 1
             job.error_message = str(exc)
 
-            if job.retry_count > settings.max_retries:
+            if job.retry_count >= settings.max_retries:
                 job.status = JobStatus.FAILED
                 job.completed_at = datetime.now(UTC)
 
@@ -136,6 +135,7 @@ async def process_job(job_id: uuid.UUID) -> None:
                 )
 
             else:
+                job.retry_count += 1
                 job.status = JobStatus.PENDING
                 job.started_at = None
 
