@@ -44,7 +44,7 @@ jobs:
             alembic upgrade head || echo "No migrations or migration failed, skipping..."
             cd ..
 
-            # Inject SSE buffering fix safely without destroying SSL config
+            # Inject SSE buffering fix
             if ! grep -q "proxy_buffering off;" /etc/nginx/sites-available/job-scheduler; then
               sudo sed -i '/proxy_set_header X-Forwarded-Proto/a \
               # Disable buffering for Server-Sent Events (SSE)\n              proxy_buffering off;\n              proxy_cache off;\n              proxy_read_timeout 86400;' /etc/nginx/sites-available/job-scheduler
@@ -63,7 +63,7 @@ jobs:
             VITE_API_BASE_URL=/api/v1 npm run build
             cd ..
 
-            # Remove bad Nginx directives that break HTTP Keep-Alive
+            # Remove Nginx directives that break HTTP Keep-Alive
             sudo sed -i '/chunked_transfer_encoding off;/d' /etc/nginx/sites-available/job-scheduler
             sudo sed -i '/proxy_set_header Connection "";/d' /etc/nginx/sites-available/job-scheduler
 
