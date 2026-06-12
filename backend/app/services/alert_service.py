@@ -6,8 +6,8 @@ from sqlalchemy import func, select
 
 from app.config import settings
 from app.database import async_session_factory
-from app.handlers.email_handler import EmailHandler
 from app.models.dlq import DeadLetterEntry
+from app.models.job import Job, JobStatus
 
 
 async def alert_loop() -> None:
@@ -42,8 +42,15 @@ async def alert_loop() -> None:
                             "body": f"Dead Letter Queue has {dlq_count} failed jobs.",
                         }
 
-                        handler = EmailHandler()
-                        await handler.execute(email_payload)
+                        alert_job = Job(
+                            type="send_email",
+                            payload=email_payload,
+                            priority=1,  # High priority
+                            status=JobStatus.PENDING,
+                            scheduled_at=now
+                        )
+                        session.add(alert_job)
+                        await session.commit()
 
                         last_alert_time = now
 
